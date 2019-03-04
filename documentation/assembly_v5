@@ -1,0 +1,573 @@
+
+epRISC assembly specification v5, r0
+
+(c) 2016-2017 John C. Lemme - jclemme (at) proportionallabs (dot) com
+This file, and the ISA documented within, are released under the epRISC license. See "license.txt" and "license-eprisc.txt" for details.
+
+**** THIS FILE IS A WORK IN PROGRESS - TREAD WITH CAUTION ****
+
+-------------------------
+
+Instruction Format
+
+Instructions consist of an opcode and a number of operands. Each instruction takes up its own line, with its operands immediately following it.
+
+Operands come in several different types.
+
+Enum        Object representing a number. 
+Value       Plain numeric value.
+Address     Used for memory operations and offset calculation.
+
+Enums are generally used for special instruction fields, like condition codes or ALU operations. They are prefixed with the "%" symbol.
+Values can be represented in a number of different bases, and are converted into a two's compliment representation trimmed to the size of the value field of the instruction.
+Addresses can either be given as an absolute address or as a label defined in the program. They are functionally identical to values, but use a unique type to allow calculation of indirect addresses.
+
+Operands are identified by a one-letter ID and a colon (in the form "c:" or "f:"), followed by the operand.
+Operands can be given to an instruction in any order. Some operands can be omitted, in lieu of a default value provided by the instruction definition.
+
+-------------------------
+
+Labels
+
+Labels define a memory location in the executable. They can be global or local.
+Global labels persist through the entire source file and all included files.
+Local labels only exist within labeled "zones", defined with the "!zone" preprocessor directive. They are prefixed with periods.
+
+Labels can be given as both addresses and values.
+When provided as an address, it will be assembled as an offset between the label's location and the current instruction's location.
+When provided as a value, it will be assembled as a 32-bit value, truncated to the target length.
+
+-------------------------
+
+Preprocessor Directives
+
+The assembler can be commanded through the use of preprocessor directives that control how the source is assembled. 
+The most common of these is the line comment. A semicolon will be ignored by the assembler, along with everything following it on the line. 
+
+Several other directives exist:
+
+!def SSSS XXXX          Define                      Replaces the term "SSSS" in the source with the pattern "XXXX".
+!include "XXXX.asm"     Include File                Imports the source file "XXXX.asm" to be compiled into the current executable.
+!zone XXXX              Define Zone                 Sets the local label zone to "XXXX".
+!data hXXXX ...         Insert Data                 Inserts the provided numeric values, one per word, at the given location. 
+!str "XXXX"             Insert String               Inserts a string of characters, one per word (at the LSB), at the given location.
+!pstr "XXXX"            Insert Packed String        Inserts a string of characters, four per word (MSB to LSB), at the given location.
+!ip hXXXX               Set Instruction Pointer     Sets the address to assemble at. Required at least once, at the beginning of the program.
+
+-------------------------
+
+Enums
+
+The register enum is built into the assembler.
+
+IP      0
+SP      1
+CS      2
+GL      3
+WW      0
+WX      1
+WY      2
+WZ      3
+XW      4
+XX      5
+XY      6
+XZ      7
+YW      8
+YX      9
+YY      10
+YZ      11
+ZW      12
+ZX      13
+ZY      14
+ZZ      15
+
+The assembler also includes a boolean enum, for use with single-bit flags.
+
+TRUE    1
+FALSE   0
+
+-------------------------
+
+Branch instructions expect a three-bit type code that defines the behavior of the branch.
+When the most significant bit of the code is zero, the branch behaves normally.
+When the most significant bit of the code is one, the branch behaves as a call instruction, either saving or restoring the previous address of execution according to the two least significant bits.
+A special case occurs when the MSB is zero, while the LSBs are both one; the branch will then attempt to return from an interrupt using the interrupt control registers and CS register.
+
+b000    Branch                      Branches to the supplied address.
+b100    Call, save link             Branches, saving the current location of execution to the link register set by the CS register.
+b101    Call, save stack            Branches, saving the current location of execution to the stack.
+b110    Call, restore link          Branches to the address stored in the link register set by the CS register.
+b111    Call, restore stack         Branches to the address stored on the stack.
+b011    Interrupt return            Branches either from the stack or an interrupt link register, performing priority restoration in the process.
+
+
+Branch instructions also expect a four-bit condition code that defines when the branch should be performed.
+Condition codes determine their result by querying the carry, zero, negative, and overflow flags of the CS register.
+All sixteen possible condition codes are defined. The branch will execute when the chosen condition is true.
+
+h00     Always True                 Always executes.
+h01     Equal                       Executes if the zero flag is set.
+h02     Not Equal                   Executes if the zero flag is reset.
+h03     Higher or Same              Executes if the carry flag is set.
+h04     Lower                       Executes if the carry flag is reset.
+h05     Negative                    Executes if the negative flag is set.
+h06     Positive or Zero            Executes if the negative flag is reset.
+h07     Overflow                    Executes if the overflow flag is set.
+h08     No Overflow                 Executes if the overflow flag is reset.
+h09     Higher                      Executes if the carry flag is set and the zero flag is reset.
+h0A     Lower or Same               Executes if the carry flag is reset or if zero flag is set.
+h0B     Greater/Equal To            Executes if the negative and overflow flags are equal.
+h0C     Less/Equal To               Executes if the negative and overflow flags are inequal.
+h0D     Greater Than                Executes if the zero flag is reset and the negative and overflow flags are equal.
+h0E     Less Than                   Executes if the zero flag is set or if the negative and zero flags are inequal.
+h0F     Always False                Never executes.
+
+
+
+
+enum:REGISTER=IP:0/SP:1/CS:2/GL:3/WW:0/WX:1/WY:2/WZ:3/XW:4/XX:5/XY:6/XZ:7/YW:8/YX:9/YY:10/YZ:11/ZW:12/ZX:13/ZY:14/ZZ:15
+
+enum:CONDITION=ALC:0/EQL:1/NEQ:2/HOS:3/LOW:4/NEG:5/POZ:6/OVF:7/NOV:8/HIG:9/LOS:10/GET:11/LET:12/GRT:13/LST:14
+
+enum:BRANCHALT=NONE:0/SVLK:4/SVSK:5/RSLK:6/RSSK:7
+
+enum:BOOLEAN=FALSE:0/TRUE:1
+
+
+
+
+
+Branch Instructions
+-------------------
+
+BRCH.O  #Branch, register and 20-bit offset
+    Branches to the address stored in the specified register, with a 20-bit offset added to it.
+    L   Branch modifier             NONE
+    C   Condition code              ALC
+    R   Base address register       IP
+    O   Offset                      h00000
+
+BRCH.A  #Branch, register and 20-bit address
+    Branches to the address stored in the specified register, with a 20-bit indirect address added to it.
+    L   Branch modifier             NONE
+    C   Condition code              ALC
+    R   Base address register       IP
+    A   Address                      
+
+CALL.S  #Branch to stack, call subroutine, register and 20-bit offset
+    Branches to the address stored in the specified register, with a 20-bit indirect address added to it, and pushes the current IP onto the stack.
+    C   Condition code              ALC
+    R   Base address register       IP
+    A   Address                      
+
+CALL.L  #Branch to link, call subroutine, register and 20-bit address
+    Branches to the address stored in the specified register, with a 20-bit indirect address added to it, and saves the current IP in the link register.
+    C   Condition code              ALC
+    R   Base address register       IP
+    A   Address                      
+
+RTRN.S  #Branch, return from stack
+    Branches to the address stored on the top of the stack.
+    C   Condition code              ALC
+
+
+RTRN.L  #Branch, return from stack
+    Branches to the address stored in the link register.
+    C   Condition code              ALC
+
+
+Load/Store Instructions
+-----------------------
+
+LOAD.O  #Load, register and 20-bit offset
+    Forms an address from the base address register and a given 20-bit offset, and loads the value in memory at that address to the given register.
+    R   Base address register       
+    D   Destination register
+    O   Offset                      h00000                      
+   
+STOR.O  #Store, register and 20-bit offset
+    Forms an address from the base address register and a given 20-bit offset, and stores the value in the given register to memory at that address.
+    R   Base address register       
+    S   Source register
+    O   Offset                      h00000                      
+
+LOAD.A  #Load, register and 20-bit address
+    Forms an address from the base address register and a given 20-bit indirect address, and loads the value in memory at that address to the given register.
+    R   Base address register       
+    D   Destination register
+    A   Address                                            
+   
+STOR.A  #Store, register and 20-bit address
+    Forms an address from the base address register and a given 20-bit indirect address, and stores the value in the given register to memory at that address.
+    R   Base address register       
+    S   Source register
+    A   Address                                            
+
+PUSH.R  #Store, push to stack
+    Stores the value in the given register to the stack, incrementing the stack pointer.
+    S   Source register
+   
+POPS.R  #Load, pop from stack
+    Loads the given register from the stack, decrementing the stack pointer.
+    D   Destination register
+
+
+Move Instructions
+-----------------
+
+MOVE.V  #Move, 20-bit value
+    format=001ODDDDSSSSVVVVVVVVVVVVVVVVVVVV
+    O=ENUMT:BOOLEAN:FALSE
+    D=ENUMT:REGISTER
+    S=VALUE:h0
+    V=VALUE
+
+
+MOVE.A  #Move, 20-bit address
+    format=001ODDDDSSSSAAAAAAAAAAAAAAAAAAAA
+    O=ENUMT:BOOLEAN:FALSE
+    D=ENUMT:REGISTER
+    S=VALUE:h0
+    A=LABEL
+
+MOVE.R  #Move, two register
+    format=00001000DDDDSSSS0000000000000000
+    D=ENUMT:REGISTER
+    S=ENUMT:REGISTER
+
+
+MOVE.S  #Move, two register swap
+    format=00001001DDDDSSSS0000000000000000
+    D=ENUMT:REGISTER
+    S=ENUMT:REGISTER
+
+# # # # # # # #
+
+ARTH.R  #Arithmetic operation, two registers
+    format=0001000OOOOODDDDAAAABBBBVVVVVVVV
+    O=VALUE:h0
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    B=ENUMT:REGISTER
+    V=VALUE:h0
+
+
+ARTH.V  #Arithmetic operation, register and 8-bit value
+    format=0001100OOOOODDDDAAAASSSSVVVVVVVV
+    O=VALUE:h0
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    S=VALUE:h0
+    V=VALUE:h0
+
+
+ADDR.R  #Add, two registers
+    format=000100000000DDDDAAAABBBBVVVVVVVV
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    B=ENUMT:REGISTER
+    V=VALUE:h0
+
+
+ADDR.V  #Add, register and 8-bit value
+    format=000110000000DDDDAAAASSSSVVVVVVVV
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    S=VALUE:h0
+    V=VALUE:h0
+
+
+SUBR.R  #Subtract, two registers
+    format=000100000001DDDDAAAABBBBVVVVVVVV
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    B=ENUMT:REGISTER
+    V=VALUE:h0
+
+
+SUBR.V  #Subtract, register and 8-bit value
+    format=000110000001DDDDAAAASSSSVVVVVVVV
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    S=VALUE:h0
+    V=VALUE:h0
+
+
+ANDB.R  #Bitwise AND, two registers
+    format=000100000010DDDDAAAABBBBVVVVVVVV
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    B=ENUMT:REGISTER
+    V=VALUE:h0
+
+
+ANDB.V  #Bitwise AND, register and 8-bit value
+    format=000110000010DDDDAAAASSSSVVVVVVVV
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    S=VALUE:h0
+    V=VALUE:h0
+
+
+ORBT.R  #Bitwise OR, two registers
+    format=000100000011DDDDAAAABBBBVVVVVVVV
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    B=ENUMT:REGISTER
+    V=VALUE:h0
+
+
+ORBT.V  #Bitwise OR, register and 8-bit value
+    format=000110000011DDDDAAAASSSSVVVVVVVV
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    S=VALUE:h0
+    V=VALUE:h0
+
+
+XORB.R  #Bitwise XOR, two registers
+    format=000100000100DDDDAAAABBBBVVVVVVVV
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    B=ENUMT:REGISTER
+    V=VALUE:h0
+
+
+XORB.V  #Bitwise XOR, register and 8-bit value
+    format=000110000100DDDDAAAASSSSVVVVVVVV
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    S=VALUE:h0
+    V=VALUE:h0
+
+
+NOTB.R  #Bitwise NOT, one register
+    format=000100000101DDDDAAAA000000000000
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+
+
+ARSL.R  #Arithmetic left shift, two registers
+    format=000100000110DDDDAAAABBBBVVVVVVVV
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    B=ENUMT:REGISTER
+    V=VALUE:h0
+
+
+ARSL.V  #Arithmetic right shift, register and 8-bit value
+    format=000110000110DDDDAAAASSSSVVVVVVVV
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    S=VALUE:h0
+    V=VALUE:h0
+
+
+ARSR.R  #Arithmetic right shift, two registers
+    format=000100000111DDDDAAAABBBBVVVVVVVV
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    B=ENUMT:REGISTER
+    V=VALUE:h0
+
+
+ARSR.V  #Arithmetic right shift, register and 8-bit value
+    format=000110000111DDDDAAAASSSSVVVVVVVV
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    S=VALUE:h0
+    V=VALUE:h0
+
+
+LOSR.R  #Logical shift right, two registers
+    format=000100001000DDDDAAAABBBBVVVVVVVV
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    B=ENUMT:REGISTER
+    V=VALUE:h0
+
+
+LOSR.V  #Logical shift right, register and 8-bit value
+    format=000110001000DDDDAAAASSSSVVVVVVVV
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    S=VALUE:h0
+    V=VALUE:h0
+
+
+ROTL.R  #Rotate left, two registers
+    format=000100001001DDDDAAAABBBBVVVVVVVV
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    B=ENUMT:REGISTER
+    V=VALUE:h0
+
+
+ROTL.V  #Rotate left, register and 8-bit value
+    format=000110001001DDDDAAAASSSSVVVVVVVV
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    S=VALUE:h0
+    V=VALUE:h0
+
+
+ROTR.R  #Rotate right, two registers
+    format=000100001010DDDDAAAABBBBVVVVVVVV
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    B=ENUMT:REGISTER
+    V=VALUE:h0
+
+
+ROTR.V  #Rotate right, register and 8-bit value
+    format=000110001010DDDDAAAASSSSVVVVVVVV
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    S=VALUE:h0
+    V=VALUE:h0
+
+
+MSKI.R  #Inverse mask, two registers
+    format=000100001011DDDDAAAABBBBVVVVVVVV
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    B=ENUMT:REGISTER
+    V=VALUE:h0
+
+
+MSKI.V  #Inverse mask, register and 8-bit value
+    format=000110001011DDDDAAAASSSSVVVVVVVV
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    S=VALUE:h0
+    V=VALUE:h0
+
+
+MASL.R  #Mask and shift left, two registers
+    format=000100001100DDDDAAAABBBBVVVVVVVV
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    B=ENUMT:REGISTER
+    V=VALUE:h0
+
+
+MASL.V  #Mask and shift left, register and 8-bit value
+    format=000110001100DDDDAAAASSSSVVVVVVVV
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    S=VALUE:h0
+    V=VALUE:h0
+
+
+MASR.R  #Mask and shift right, two registers
+    format=000100001101DDDDAAAABBBBVVVVVVVV
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    B=ENUMT:REGISTER
+    V=VALUE:h0
+
+
+MASR.V  #Mask and shift right, register and 8-bit value
+    format=000110001101DDDDAAAASSSSVVVVVVVV
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    S=VALUE:h0
+    V=VALUE:h0
+
+
+CMPR.R  #Compare, two registers
+    format=0001000011100000AAAABBBBVVVVVVVV
+    A=ENUMT:REGISTER
+    B=ENUMT:REGISTER
+    V=VALUE:h0
+
+
+CMPR.V  #Compare, register and 8-bit value
+    format=0001100011100000AAAASSSSVVVVVVVV
+    A=ENUMT:REGISTER
+    S=VALUE:h0
+    V=VALUE:h0
+
+
+TEST.R  #Test, two registers
+    format=0001000011110000AAAABBBBVVVVVVVV
+    A=ENUMT:REGISTER
+    B=ENUMT:REGISTER
+    V=VALUE:h0
+
+
+TEST.V  #Test, register and 8-bit value
+    format=0001100011110000AAAASSSSVVVVVVVV
+    A=ENUMT:REGISTER
+    S=VALUE:h0
+    V=VALUE:h0
+
+
+ADDC.R  #Add with carry, two registers
+    format=000100010000DDDDAAAABBBBVVVVVVVV
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    B=ENUMT:REGISTER
+    V=VALUE:h0
+
+
+ADDC.V  #Add with carry, register and 8-bit value
+    format=000110010000DDDDAAAASSSSVVVVVVVV
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    S=VALUE:h0
+    V=VALUE:h0
+
+
+SUBB.R  #Subtract with borrow, two registers
+    format=000100010001DDDDAAAABBBBVVVVVVVV
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    B=ENUMT:REGISTER
+    V=VALUE:h0
+
+
+SUBB.V  #Subtract with borrow, register and 8-bit value
+    format=000110010001DDDDAAAASSSSVVVVVVVV
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+    S=VALUE:h0
+    V=VALUE:h0
+
+    
+ENDX.R  #Endian swap
+    format=000100010011DDDDAAAA000000000000
+    D=ENUMT:REGISTER
+    A=ENUMT:REGISTER
+
+       
+# # # # # # # #
+
+NOOP.I  #No operation, implied
+    format=00000100000000000000000000000000
+
+
+SWIN.V  #Software interrupt, 8-bit ID
+    format=000001000001DDDDDDDD000000000000
+    D=VALUE:h0
+
+
+HALT.I  #Halt, implied
+    format=00000100001000000000000000000000
+
+
+SRPG.V  #Set register page, 4-bit value and flag
+    format=000001000011PPPPH000000000000000
+    P=VALUE:h0
+    H=ENUMT:BOOLEAN:TRUE
+
+
+
+
+
+
+
+
+
+
+

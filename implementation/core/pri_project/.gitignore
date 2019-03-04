@@ -1,0 +1,14 @@
+*.rpt
+*.chg
+*.log
+*.htm
+*.eqn
+*.sof
+*.pof
+*.summary
+*.done
+*.smsg
+*.qws
+*.jdi
+*db
+
