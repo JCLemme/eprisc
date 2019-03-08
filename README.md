@@ -1,5 +1,5 @@
 # eprisc
-The epRISC architecture
+A RISC microprocessor architecture
 
 This repository contains the epRISC ISA, a reference implementation, and sample code.
 
@@ -18,10 +18,16 @@ The reference impementation also has epRISC code for driving all of these module
 ## How can I play with it?
 Go fetch some more repos:
 
-`JCLemme/spasm` is the assembler.
+[spasm](http://github.com/JCLemme/spasm) is the assembler.
 
-`JCLemme/flail` is the emulator.
+[flail](http://github.com/JCLemme/flail) is the emulator.
 
 The assembler is reasonably complete and bug-free, and there are plenty of commented examples of epRISC programs in the `software` directory (although no formal spec sheet yet). The emulator is still being developed, but will work for testing most programs that don't rely on any hardware but the serial port.
 
-For the time being, you might want to clone http://github.com/jclemme/eprisc-open-computer instead. I've only just started moving things to separate repositories and there are bound to be issues with uncorrected file paths.
+For the time being, you might want to clone [this repository](http://github.com/jclemme/eprisc-open-computer) instead. I've only just started moving things to separate repositories and there are bound to be issues with uncorrected file paths.
+
+## Media
+
+![The most current system running a demo program](https://youtu.be/55KR43LEU_E)
+
+![The original system showing off the monitor](https://youtu.be/6Ez0p0I0oQU)
