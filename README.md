@@ -28,6 +28,6 @@ For the time being, you might want to clone [this repository](http://github.com/
 
 ## Media
 
-![The most current system running a demo program](https://youtu.be/55KR43LEU_E)
+[The most current system running a demo program](https://youtu.be/55KR43LEU_E)
 
-![The original system showing off the monitor](https://youtu.be/6Ez0p0I0oQU)
+[The original system showing off the monitor](https://youtu.be/6Ez0p0I0oQU)
