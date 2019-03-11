@@ -1,0 +1,1290 @@
+address:    output     | source
+-----------------------+---------------------------------------------------------------------------
+                    ==>| [ifirm.asm]
+0x00004000: 0x8000045f | [0047] :entry          brch.a  a:main
+                    ==>| [../rom/bios_bus.asm]
+0x00004001: 0x61c00000 | [0012] :ioc_init       push.r  s:REG_BASE
+0x00004002: 0x2c002000 | [0013]                 move.v  d:REG_BASE v:#BUS_BASE_ADDRESS
+0x00004003: 0x2f010001 | [0014]                 move.v  d:REG_RESP v:#h10001
+0x00004004: 0x6cf00000 | [0015]                 stor.o  r:REG_BASE s:REG_RESP
+0x00004005: 0x04000000 | [0016]                 noop.i
+0x00004006: 0x04000000 | [0017]                 noop.i
+0x00004007: 0x04000000 | [0018]                 noop.i
+0x00004008: 0x04000000 | [0019]                 noop.i                                              ; Reset the I/O controller
+0x00004009: 0x4cf00000 | [0020] :.wloop         load.o  r:REG_BASE d:REG_RESP
+0x0000400a: 0x18f0f001 | [0021]                 test.v  a:REG_RESP v:#h01
+0x0000400b: 0x820ffffe | [0022]                 brch.a  c:%NEQ a:.wloop                             ; Wait for send to complete
+0x0000400c: 0x4cf00000 | [0024] :.tloop         load.o  r:REG_BASE d:REG_RESP
+0x0000400d: 0x18f0f002 | [0025]                 test.v  a:REG_RESP v:#h02
+0x0000400e: 0x820ffffe | [0026]                 brch.a  c:%NEQ a:.tloop                             ; Wait for send to complete
+0x0000400f: 0x41c00000 | [0028]                 pops.r  d:REG_BASE
+0x00004010: 0xf0000000 | [0029]                 rtrn.s                                              ; Return from stack
+0x00004011: 0x61e00000 | [0038] :ioc_send       push.r  s:REG_ADDR
+0x00004012: 0x61d00000 | [0039]                 push.r  s:REG_DATA
+0x00004013: 0x61c00000 | [0040]                 push.r  s:REG_BASE
+0x00004014: 0x18111004 | [0041]                 subr.v  d:%SP a:%SP v:#h04
+0x00004015: 0x2c002000 | [0042]                 move.v  d:REG_BASE v:#BUS_BASE_ADDRESS
+0x00004016: 0x41d00000 | [0043]                 pops.r  d:REG_DATA
+0x00004017: 0x41e00000 | [0044]                 pops.r  d:REG_ADDR                                  
+0x00004018: 0x18011006 | [0045]                 addr.v  d:%SP a:%SP v:#h06                          ; Set up the stack
+0x00004019: 0x2f600008 | [0047]                 move.v  d:REG_RESP v:#h8 s:#h06
+0x0000401a: 0x103ffe00 | [0048]                 orbt.r  d:REG_RESP a:REG_RESP b:REG_ADDR
+0x0000401b: 0x186ff010 | [0049]                 arsl.v  d:REG_RESP a:REG_RESP v:#h10                ; Form write packet at address
+0x0000401c: 0x103ffd00 | [0050]                 orbt.r  d:REG_RESP a:REG_RESP b:REG_DATA            ; Add data
+0x0000401d: 0x6cf00001 | [0051]                 stor.o  r:REG_BASE s:REG_RESP o:#h01                ; Store packet in send register
+0x0000401e: 0x2f010005 | [0052]                 move.v  d:REG_RESP v:#h10005
+0x0000401f: 0x6cf00000 | [0053]                 stor.o  r:REG_BASE s:REG_RESP                       ; Command send
+0x00004020: 0x4cf00000 | [0055] :.wloop         load.o  r:REG_BASE d:REG_RESP
+0x00004021: 0x18f0f001 | [0056]                 test.v  a:REG_RESP v:#h01
+0x00004022: 0x820ffffe | [0057]                 brch.a  c:%NEQ a:.wloop                             ; Wait for send to complete
+0x00004023: 0x4cf00000 | [0059] :.tloop         load.o  r:REG_BASE d:REG_RESP
+0x00004024: 0x18f0f002 | [0060]                 test.v  a:REG_RESP v:#h02
+0x00004025: 0x820ffffe | [0061]                 brch.a  c:%NEQ a:.tloop                             ; Wait for send to complete
+0x00004026: 0x4cf00002 | [0063]                 load.o  r:REG_BASE d:REG_RESP o:#h02                ; Load response into register
+0x00004027: 0x41c00000 | [0065]                 pops.r  d:REG_BASE
+0x00004028: 0x41d00000 | [0066]                 pops.r  d:REG_DATA
+0x00004029: 0x41e00000 | [0067]                 pops.r  d:REG_ADDR                                  ; Restore registers
+0x0000402a: 0xf0000000 | [0068]                 rtrn.s                                              ; Return from stack
+0x0000402b: 0x61e00000 | [0077] :ioc_recv       push.r  s:REG_ADDR
+0x0000402c: 0x61c00000 | [0078]                 push.r  s:REG_BASE
+0x0000402d: 0x18111003 | [0079]                 subr.v  d:%SP a:%SP v:#h03
+0x0000402e: 0x2c002000 | [0080]                 move.v  d:REG_BASE v:#BUS_BASE_ADDRESS
+0x0000402f: 0x41e00000 | [0081]                 pops.r  d:REG_ADDR                                  
+0x00004030: 0x18011004 | [0082]                 addr.v  d:%SP a:%SP v:#h04                          ; Set up the stack
+0x00004031: 0x2f600000 | [0084]                 move.v  d:REG_RESP v:#h00 s:#h06
+0x00004032: 0x103ffe00 | [0085]                 orbt.r  d:REG_RESP a:REG_RESP b:REG_ADDR
+0x00004033: 0x186ff010 | [0086]                 arsl.v  d:REG_RESP a:REG_RESP v:#h10                ; Form read packet at address
+0x00004034: 0x6cf00001 | [0087]                 stor.o  r:REG_BASE s:REG_RESP o:#h01                ; Store packet in send register
+0x00004035: 0x2f010005 | [0088]                 move.v  d:REG_RESP v:#h10005
+0x00004036: 0x6cf00000 | [0089]                 stor.o  r:REG_BASE s:REG_RESP                       ; Command send
+0x00004037: 0x4cf00000 | [0090] :.wloop         load.o  r:REG_BASE d:REG_RESP
+0x00004038: 0x18f0f001 | [0091]                 test.v  a:REG_RESP v:#h01
+0x00004039: 0x820ffffe | [0092]                 brch.a  c:%NEQ a:.wloop                             ; Wait for send to complete
+0x0000403a: 0x4cf00000 | [0094] :.tloop         load.o  r:REG_BASE d:REG_RESP
+0x0000403b: 0x18f0f002 | [0095]                 test.v  a:REG_RESP v:#h02
+0x0000403c: 0x820ffffe | [0096]                 brch.a  c:%NEQ a:.tloop                             ; Wait for send to complete
+0x0000403d: 0x2f600000 | [0098]                 move.v  d:REG_RESP v:#h00 s:#h06
+0x0000403e: 0x103ffe00 | [0099]                 orbt.r  d:REG_RESP a:REG_RESP b:REG_ADDR
+0x0000403f: 0x186ff010 | [0100]                 arsl.v  d:REG_RESP a:REG_RESP v:#h10                ; Form read packet at address
+0x00004040: 0x6cf00001 | [0101]                 stor.o  r:REG_BASE s:REG_RESP o:#h01                ; Store packet in send register
+0x00004041: 0x2f010005 | [0102]                 move.v  d:REG_RESP v:#h10005
+0x00004042: 0x6cf00000 | [0103]                 stor.o  r:REG_BASE s:REG_RESP                       ; Command send
+0x00004043: 0x4cf00000 | [0104] :.gloop         load.o  r:REG_BASE d:REG_RESP
+0x00004044: 0x18f0f001 | [0105]                 test.v  a:REG_RESP v:#h01
+0x00004045: 0x820ffffe | [0106]                 brch.a  c:%NEQ a:.gloop                             ; Wait for send to complete
+0x00004046: 0x4cf00000 | [0108] :.sloop         load.o  r:REG_BASE d:REG_RESP
+0x00004047: 0x18f0f002 | [0109]                 test.v  a:REG_RESP v:#h02
+0x00004048: 0x820ffffe | [0110]                 brch.a  c:%NEQ a:.sloop                             ; Wait for send to complete
+0x00004049: 0x4cf00002 | [0112]                 load.o  r:REG_BASE d:REG_RESP o:#h02                ; Load response into register
+0x0000404a: 0x41c00000 | [0114]                 pops.r  d:REG_BASE
+0x0000404b: 0x41e00000 | [0115]                 pops.r  d:REG_ADDR                                  ; Restore registers
+0x0000404c: 0xf0000000 | [0116]                 rtrn.s                                              ; Return from stack
+                    ==>| [../rom/bios_uart_fast.asm]
+0x0000404d: 0x61d00000 | [0013] :ser_send       push.r  s:REG_DATA
+0x0000404e: 0x61c00000 | [0014]                 push.r  s:REG_BASE
+0x0000404f: 0x18111003 | [0015]                 subr.v  d:%SP a:%SP v:#h03
+0x00004050: 0x2c002000 | [0016]                 move.v  d:REG_BASE v:#BUS_BASE_ADDRESS
+0x00004051: 0x41d00000 | [0017]                 pops.r  d:REG_DATA                                  ; Set up the stack
+0x00004052: 0x18011004 | [0018]                 addr.v  d:%SP a:%SP v:#h04
+0x00004053: 0x2f000011 | [0020]                 move.v  d:REG_RESP v:#h011
+0x00004054: 0x61f00000 | [0021]                 push.r  s:REG_RESP
+0x00004055: 0x61d00000 | [0022]                 push.r  s:REG_DATA
+0x00004056: 0xd00fffbb | [0023]                 call.s  a:ioc_send
+0x00004057: 0x41d00000 | [0024]                 pops.r  d:REG_DATA
+0x00004058: 0x41f00000 | [0025]                 pops.r  d:REG_RESP
+0x00004059: 0x2f000010 | [0027]                 move.v  d:REG_RESP v:#h010
+0x0000405a: 0x61f00000 | [0028]                 push.r  s:REG_RESP
+0x0000405b: 0x2f000080 | [0029]                 move.v  d:REG_RESP v:#h80
+0x0000405c: 0x61f00000 | [0030]                 push.r  s:REG_RESP
+0x0000405d: 0xd00fffb4 | [0031]                 call.s  a:ioc_send
+0x0000405e: 0x41d00000 | [0032]                 pops.r  d:REG_DATA
+0x0000405f: 0x41f00000 | [0033]                 pops.r  d:REG_RESP
+0x00004060: 0x2f000010 | [0035]                 move.v  d:REG_RESP v:#h010
+0x00004061: 0x61f00000 | [0036]                 push.r  s:REG_RESP
+0x00004062: 0xd00fffc9 | [0037] :.rloop         call.s  a:ioc_recv
+0x00004063: 0x18f0f080 | [0038]                 test.v  a:REG_RESP v:#h80
+0x00004064: 0x820ffffe | [0039]                 brch.a  c:%NEQ a:.rloop
+0x00004065: 0xd00fffc6 | [0041] :.sloop         call.s  a:ioc_recv
+0x00004066: 0x18f0f040 | [0042]                 test.v  a:REG_RESP v:#h40
+0x00004067: 0x820ffffe | [0043]                 brch.a  c:%NEQ a:.sloop
+0x00004068: 0x41f00000 | [0045]                 pops.r  d:REG_RESP 
+0x00004069: 0x41c00000 | [0047]                 pops.r  d:REG_BASE
+0x0000406a: 0x41d00000 | [0048]                 pops.r  d:REG_DATA
+0x0000406b: 0xf0000000 | [0049]                 rtrn.s                                              ; Return from stack
+0x0000406c: 0x61c00000 | [0055] :ser_srcv       push.r  s:REG_BASE
+0x0000406d: 0x2c002000 | [0056]                 move.v  d:REG_BASE v:#BUS_BASE_ADDRESS              ; Set up stack
+0x0000406e: 0x2f808010 | [0058]                 move.v  d:REG_RESP v:#h8010 s:#h08                  ; Enable serial data reception
+0x0000406f: 0x3f000020 | [0059]                 move.v  d:REG_RESP v:#h0020 o:%TRUE                 ; Data send packet
+0x00004070: 0x6cf00001 | [0060]                 stor.o  r:REG_BASE s:REG_RESP o:#h01                ; Store packet in send register
+0x00004071: 0x2f010005 | [0061]                 move.v  d:REG_RESP v:#h10005
+0x00004072: 0x6cf00000 | [0062]                 stor.o  r:REG_BASE s:REG_RESP                       ; Command send
+0x00004073: 0x4cf00000 | [0063] :.wloop         load.o  r:REG_BASE d:REG_RESP
+0x00004074: 0x18f0f001 | [0064]                 test.v  a:REG_RESP v:#h01
+0x00004075: 0x820ffffe | [0065]                 brch.a  c:%NEQ a:.wloop                             ; Wait for send to complete
+0x00004076: 0x2f800010 | [0067]                 move.v  d:REG_RESP v:#h0010 s:#h08                  ; Form read packet at address
+0x00004077: 0x6cf00001 | [0068]                 stor.o  r:REG_BASE s:REG_RESP o:#h01                ; Store packet in send register
+0x00004078: 0x2f010005 | [0069]                 move.v  d:REG_RESP v:#h10005
+0x00004079: 0x6cf00000 | [0070]                 stor.o  r:REG_BASE s:REG_RESP                       ; Command send
+0x0000407a: 0x4cf00000 | [0071] :.xloop         load.o  r:REG_BASE d:REG_RESP
+0x0000407b: 0x18f0f001 | [0072]                 test.v  a:REG_RESP v:#h01
+0x0000407c: 0x820ffffe | [0073]                 brch.a  c:%NEQ a:.xloop                             ; Wait for send to complete
+0x0000407d: 0x2f800010 | [0075] :.sloop         move.v  d:REG_RESP v:#h0010 s:#h08                  ; Form read packet at address
+0x0000407e: 0x6cf00001 | [0076]                 stor.o  r:REG_BASE s:REG_RESP o:#h01                ; Store packet in send register
+0x0000407f: 0x2f010005 | [0077]                 move.v  d:REG_RESP v:#h10005
+0x00004080: 0x6cf00000 | [0078]                 stor.o  r:REG_BASE s:REG_RESP                       ; Command send
+0x00004081: 0x4cf00000 | [0079] :.yloop         load.o  r:REG_BASE d:REG_RESP
+0x00004082: 0x18f0f001 | [0080]                 test.v  a:REG_RESP v:#h01
+0x00004083: 0x820ffffe | [0081]                 brch.a  c:%NEQ a:.yloop                             ; Wait for send to complete
+0x00004084: 0x4cf00002 | [0082]                 load.o  r:REG_BASE d:REG_RESP o:#h02                ; Load response into register
+0x00004085: 0x18f0f020 | [0083]                 test.v  a:REG_RESP v:#h20
+0x00004086: 0x820ffff7 | [0084]                 brch.a  c:%NEQ a:.sloop                             ; Wait for *serial* receive to happen
+0x00004087: 0x2f800012 | [0086]                 move.v  d:REG_RESP v:#h0012 s:#h08                  ; Form read packet at address
+0x00004088: 0x6cf00001 | [0087]                 stor.o  r:REG_BASE s:REG_RESP o:#h01                ; Store packet in send register
+0x00004089: 0x2f010005 | [0088]                 move.v  d:REG_RESP v:#h10005
+0x0000408a: 0x6cf00000 | [0089]                 stor.o  r:REG_BASE s:REG_RESP                       ; Command send
+0x0000408b: 0x4cf00000 | [0090] :.zloop         load.o  r:REG_BASE d:REG_RESP
+0x0000408c: 0x18f0f001 | [0091]                 test.v  a:REG_RESP v:#h01
+0x0000408d: 0x820ffffe | [0092]                 brch.a  c:%NEQ a:.zloop                             ; Wait for send to complete
+0x0000408e: 0x2f800012 | [0094] :.floop         move.v  d:REG_RESP v:#h0012 s:#h08                  ; Form read packet at address
+0x0000408f: 0x6cf00001 | [0095]                 stor.o  r:REG_BASE s:REG_RESP o:#h01                ; Store packet in send register
+0x00004090: 0x2f010005 | [0096]                 move.v  d:REG_RESP v:#h10005
+0x00004091: 0x6cf00000 | [0097]                 stor.o  r:REG_BASE s:REG_RESP                       ; Command send
+0x00004092: 0x4cf00000 | [0098] :.rloop         load.o  r:REG_BASE d:REG_RESP
+0x00004093: 0x18f0f001 | [0099]                 test.v  a:REG_RESP v:#h01
+0x00004094: 0x820ffffe | [0100]                 brch.a  c:%NEQ a:.rloop                             ; Wait for send to complete
+0x00004095: 0x4cf00002 | [0101]                 load.o  r:REG_BASE d:REG_RESP o:#h02                ; Load response into register
+0x00004096: 0x41c00000 | [0103]                 pops.r  d:REG_BASE
+0x00004097: 0xf0000000 | [0104]                 rtrn.s                                              ; Return from stack
+                    ==>| [../rom/bios_spi.asm]
+0x00004098: 0x61c00000 | [0019] :spi_addr       push.r  s:REG_ADDR
+0x00004099: 0x61d00000 | [0020]                 push.r  s:REG_WORK
+0x0000409a: 0x18111003 | [0021]                 subr.v  d:%SP a:%SP v:#h03                          ; Set up the stack
+0x0000409b: 0x41c00000 | [0022]                 pops.r  d:REG_ADDR                                  ; Get the number we're supposed to print
+0x0000409c: 0x18011004 | [0023]                 addr.v  d:%SP a:%SP v:#h04                          ; Set up the stack
+0x0000409d: 0x2d000020 | [0025]                 move.v  d:REG_WORK v:SPI_CONF_ADDRESS
+0x0000409e: 0x61d00000 | [0026]                 push.r  s:REG_WORK
+0x0000409f: 0xd00fff8c | [0027]                 call.s  a:ioc_recv
+0x000040a0: 0x41d00000 | [0028]                 pops.r  d:REG_WORK                                  ; Get current configuration register
+0x000040a1: 0x18bff078 | [0030]                 mski.v  d:REG_RESP a:REG_RESP v:#h78
+0x000040a2: 0x186cc003 | [0031]                 arsl.v  d:REG_ADDR a:REG_ADDR v:#h03
+0x000040a3: 0x103ccf00 | [0032]                 orbt.r  d:REG_ADDR a:REG_ADDR b:REG_RESP            ; Calculate mask
+0x000040a4: 0x61d00000 | [0034]                 push.r  s:REG_WORK
+0x000040a5: 0x61c00000 | [0035]                 push.r  s:REG_ADDR
+0x000040a6: 0xd00fff6b | [0036]                 call.s  a:ioc_send
+0x000040a7: 0x41c00000 | [0037]                 pops.r  d:REG_ADDR
+0x000040a8: 0x41d00000 | [0038]                 pops.r  d:REG_WORK                                  ; Set new mask
+0x000040a9: 0x41d00000 | [0040]                 pops.r  d:REG_WORK
+0x000040aa: 0x41c00000 | [0041]                 pops.r  d:REG_ADDR
+0x000040ab: 0xf0000000 | [0042]                 rtrn.s                                              ; And return
+0x000040ac: 0x61c00000 | [0050] :spi_send       push.r  s:REG_DATA
+0x000040ad: 0x61d00000 | [0051]                 push.r  s:REG_WORK
+0x000040ae: 0x18111003 | [0052]                 subr.v  d:%SP a:%SP v:#h03                          ; Set up the stack
+0x000040af: 0x41c00000 | [0053]                 pops.r  d:REG_DATA                                  ; Get the number we're supposed to print
+0x000040b0: 0x18011004 | [0054]                 addr.v  d:%SP a:%SP v:#h04                          ; Set up the stack
+0x000040b1: 0x2d000021 | [0056]                 move.v  d:REG_WORK v:SPI_MOSI_ADDRESS
+0x000040b2: 0x61d00000 | [0057]                 push.r  s:REG_WORK
+0x000040b3: 0x61c00000 | [0058]                 push.r  s:REG_DATA
+0x000040b4: 0xd00fff5d | [0059]                 call.s  a:ioc_send
+0x000040b5: 0x41c00000 | [0060]                 pops.r  d:REG_DATA
+0x000040b6: 0x41d00000 | [0061]                 pops.r  d:REG_WORK                                  ; Write data to send
+0x000040b7: 0x2d000020 | [0063]                 move.v  d:REG_WORK v:SPI_CONF_ADDRESS
+0x000040b8: 0x61d00000 | [0064]                 push.r  s:REG_WORK
+0x000040b9: 0xd00fff72 | [0065]                 call.s  a:ioc_recv
+0x000040ba: 0x41d00000 | [0066]                 pops.r  d:REG_WORK                                  ; Get current configuration register
+0x000040bb: 0x183ff080 | [0069]                 orbt.v  d:REG_RESP a:REG_RESP v:#h80                ; Calculate mask
+0x000040bc: 0x61d00000 | [0071]                 push.r  s:REG_WORK
+0x000040bd: 0x61f00000 | [0072]                 push.r  s:REG_RESP
+0x000040be: 0xd00fff53 | [0073]                 call.s  a:ioc_send
+0x000040bf: 0x41f00000 | [0074]                 pops.r  d:REG_RESP
+0x000040c0: 0x41d00000 | [0075]                 pops.r  d:REG_WORK                                  ; Set new mask
+0x000040c1: 0x2d000020 | [0077]                 move.v  d:REG_WORK v:SPI_CONF_ADDRESS
+0x000040c2: 0x61d00000 | [0078]                 push.r  s:REG_WORK
+0x000040c3: 0xd00fff68 | [0079] :.chkloop       call.s  a:ioc_recv
+0x000040c4: 0x18f0f080 | [0080]                 test.v  a:REG_RESP v:#h80
+0x000040c5: 0x820ffffe | [0081]                 brch.a  c:%NEQ a:.chkloop
+0x000040c6: 0x41d00000 | [0083]                 pops.r  d:REG_WORK 
+0x000040c7: 0x2d000022 | [0085]                 move.v  d:REG_WORK v:SPI_MISO_ADDRESS
+0x000040c8: 0x61d00000 | [0086]                 push.r  s:REG_WORK
+0x000040c9: 0xd00fff62 | [0087]                 call.s  a:ioc_recv
+0x000040ca: 0x41d00000 | [0088]                 pops.r  d:REG_WORK                                  ; Get captured data
+0x000040cb: 0x41d00000 | [0090]                 pops.r  d:REG_WORK
+0x000040cc: 0x41c00000 | [0091]                 pops.r  d:REG_DATA
+0x000040cd: 0xf0000000 | [0092]                 rtrn.s                                              ; And return
+0x000040ce: 0x61d00000 | [0099] :spi_recv       push.r  s:REG_WORK                                  ; Set up the stack
+0x000040cf: 0x2d000021 | [0101]                 move.v  d:REG_WORK v:SPI_MOSI_ADDRESS
+0x000040d0: 0x61d00000 | [0102]                 push.r  s:REG_WORK
+0x000040d1: 0x2d0000ff | [0103]                 move.v  d:REG_WORK v:#hFF
+0x000040d2: 0x61d00000 | [0104]                 push.r  s:REG_WORK
+0x000040d3: 0xd00fff3e | [0105]                 call.s  a:ioc_send
+0x000040d4: 0x41d00000 | [0106]                 pops.r  d:REG_WORK
+0x000040d5: 0x41d00000 | [0107]                 pops.r  d:REG_WORK                                  ; Write data to send
+0x000040d6: 0x2d000020 | [0109]                 move.v  d:REG_WORK v:SPI_CONF_ADDRESS
+0x000040d7: 0x61d00000 | [0110]                 push.r  s:REG_WORK
+0x000040d8: 0xd00fff53 | [0111]                 call.s  a:ioc_recv
+0x000040d9: 0x41d00000 | [0112]                 pops.r  d:REG_WORK                                  ; Get current configuration register
+0x000040da: 0x183ff080 | [0114]                 orbt.v  d:REG_RESP a:REG_RESP v:#h80                ; Calculate mask
+0x000040db: 0x61d00000 | [0116]                 push.r  s:REG_WORK
+0x000040dc: 0x61f00000 | [0117]                 push.r  s:REG_RESP
+0x000040dd: 0xd00fff34 | [0118]                 call.s  a:ioc_send
+0x000040de: 0x41f00000 | [0119]                 pops.r  d:REG_RESP
+0x000040df: 0x41d00000 | [0120]                 pops.r  d:REG_WORK                                  ; Set new mask
+0x000040e0: 0x2d000020 | [0122]                 move.v  d:REG_WORK v:SPI_CONF_ADDRESS
+0x000040e1: 0x61d00000 | [0123]                 push.r  s:REG_WORK
+0x000040e2: 0xd00fff49 | [0124] :.chkloop       call.s  a:ioc_recv
+0x000040e3: 0x18f0f080 | [0125]                 test.v  a:REG_RESP v:#h80
+0x000040e4: 0x820ffffe | [0126]                 brch.a  c:%NEQ a:.chkloop
+0x000040e5: 0x41d00000 | [0128]                 pops.r  d:REG_WORK 
+0x000040e6: 0x2d000022 | [0130]                 move.v  d:REG_WORK v:SPI_MISO_ADDRESS
+0x000040e7: 0x61d00000 | [0131]                 push.r  s:REG_WORK
+0x000040e8: 0xd00fff43 | [0132]                 call.s  a:ioc_recv
+0x000040e9: 0x41d00000 | [0133]                 pops.r  d:REG_WORK                                  ; Get captured data
+0x000040ea: 0x41d00000 | [0135]                 pops.r  d:REG_WORK
+0x000040eb: 0xf0000000 | [0136]                 rtrn.s                                              ; And return
+                    ==>| [../rom/bios_string.asm]
+0x000040ec: 0x61c00000 | [0013] :str_hnum       push.r  s:REG_INPT
+0x000040ed: 0x61d00000 | [0014]                 push.r  s:REG_WORK
+0x000040ee: 0x61e00000 | [0015]                 push.r  s:REG_CONT
+0x000040ef: 0x18111004 | [0016]                 subr.v  d:%SP a:%SP v:#h04                          ; Set up the stack
+0x000040f0: 0x41c00000 | [0017]                 pops.r  d:REG_INPT                                  ; Get the number we're supposed to print
+0x000040f1: 0x2e000008 | [0018]                 move.v  d:REG_CONT v:#h08
+0x000040f2: 0x18011005 | [0019]                 addr.v  d:%SP a:%SP v:#h05                          ; Set up the stack
+0x000040f3: 0x182dccf0 | [0021] :.ploop         andb.v  d:REG_WORK a:REG_INPT v:#hF0 s:#h0C         
+0x000040f4: 0x186cc004 | [0022]                 arsl.v  d:REG_INPT a:REG_INPT v:#h04
+0x000040f5: 0x188dd01c | [0023]                 losr.v  d:REG_WORK a:REG_WORK v:#h1C                ; Grab a nybble
+0x000040f6: 0x180dd030 | [0025]                 addr.v  d:REG_WORK a:REG_WORK v:#h30                ; Make it an ASCII number
+0x000040f7: 0x18e0d03a | [0026]                 cmpr.v  a:REG_WORK v:#h3A   
+0x000040f8: 0x84000002 | [0027]                 brch.a  c:%LOW a:.prest                             ; Hex needs a little more
+0x000040f9: 0x180dd007 | [0028]                 addr.v  d:REG_WORK a:REG_WORK v:#h07
+0x000040fa: 0x61d00000 | [0029] :.prest         push.r  s:REG_WORK
+0x000040fb: 0xd00fff52 | [0030]                 call.s  a:ser_send
+0x000040fc: 0x41d00000 | [0032]                 pops.r  d:REG_WORK                                  ; Print it
+0x000040fd: 0x181ee001 | [0034]                 subr.v  d:REG_CONT a:REG_CONT v:#h01
+0x000040fe: 0x18e0e000 | [0035]                 cmpr.v  a:REG_CONT v:#h00
+0x000040ff: 0x820ffff4 | [0036]                 brch.a  c:%NEQ a:.ploop                             ; Repeat
+0x00004100: 0x41e00000 | [0038]                 pops.r  d:REG_CONT
+0x00004101: 0x41d00000 | [0039]                 pops.r  d:REG_WORK
+0x00004102: 0x41c00000 | [0040]                 pops.r  d:REG_INPT
+0x00004103: 0xf0000000 | [0041]                 rtrn.s                                              ; And return
+0x00004104: 0x61c00000 | [0049] :str_lnum       push.r  s:REG_INPT
+0x00004105: 0x61d00000 | [0050]                 push.r  s:REG_CONT
+0x00004106: 0x61e00000 | [0051]                 push.r  s:REG_WORK
+0x00004107: 0x18111004 | [0052]                 subr.v  d:%SP a:%SP v:#h04                          ; Set up the stack
+0x00004108: 0x41d00000 | [0053]                 pops.r  d:REG_CONT                                  ; Get the number we're supposed to print
+0x00004109: 0x41c00000 | [0054]                 pops.r  d:REG_INPT
+0x0000410a: 0x18011006 | [0055]                 addr.v  d:%SP a:%SP v:#h06                          ; Set up the stack
+0x0000410b: 0x61d00000 | [0057]                 push.r  s:REG_CONT
+0x0000410c: 0x61c00000 | [0058]                 push.r  s:REG_INPT
+0x0000410d: 0x2c000008 | [0059]                 move.v  d:REG_INPT v:#h08
+0x0000410e: 0x101dcd00 | [0060]                 subr.r  d:REG_CONT a:REG_INPT b:REG_CONT
+0x0000410f: 0x186dd002 | [0061]                 arsl.v  d:REG_CONT a:REG_CONT v:#h02
+0x00004110: 0x41c00000 | [0062]                 pops.r  d:REG_INPT
+0x00004111: 0x106ccd00 | [0063]                 arsl.r  d:REG_INPT a:REG_INPT b:REG_CONT
+0x00004112: 0x41d00000 | [0064]                 pops.r  d:REG_CONT                                  ; Preshift for length selection
+0x00004113: 0x182eccf0 | [0066] :.ploop         andb.v  d:REG_WORK a:REG_INPT v:#hF0 s:#h0C         
+0x00004114: 0x186cc004 | [0067]                 arsl.v  d:REG_INPT a:REG_INPT v:#h04
+0x00004115: 0x188ee01c | [0068]                 losr.v  d:REG_WORK a:REG_WORK v:#h1C                ; Grab a nybble
+0x00004116: 0x180ee030 | [0070]                 addr.v  d:REG_WORK a:REG_WORK v:#h30                ; Make it an ASCII number
+0x00004117: 0x18e0e03a | [0071]                 cmpr.v  a:REG_WORK v:#h3A   
+0x00004118: 0x84000002 | [0072]                 brch.a  c:%LOW a:.prest                             ; Hex needs a little more
+0x00004119: 0x180ee007 | [0073]                 addr.v  d:REG_WORK a:REG_WORK v:#h07
+0x0000411a: 0x61e00000 | [0074] :.prest         push.r  s:REG_WORK
+0x0000411b: 0xd00fff32 | [0075]                 call.s  a:ser_send
+0x0000411c: 0x41e00000 | [0077]                 pops.r  d:REG_WORK                                  ; Print it
+0x0000411d: 0x181dd001 | [0079]                 subr.v  d:REG_CONT a:REG_CONT v:#h01
+0x0000411e: 0x18e0d000 | [0080]                 cmpr.v  a:REG_CONT v:#h00
+0x0000411f: 0x820ffff4 | [0081]                 brch.a  c:%NEQ a:.ploop                             ; Repeat
+0x00004120: 0x41e00000 | [0083]                 pops.r  d:REG_WORK
+0x00004121: 0x41d00000 | [0084]                 pops.r  d:REG_CONT
+0x00004122: 0x41c00000 | [0085]                 pops.r  d:REG_INPT
+0x00004123: 0xf0000000 | [0086]                 rtrn.s                                              ; And return
+0x00004124: 0x61c00000 | [0095] :str_getc       push.r  s:REG_SADR
+0x00004125: 0x61d00000 | [0096]                 push.r  s:REG_WORD
+0x00004126: 0x61e00000 | [0097]                 push.r  s:REG_ICHR
+0x00004127: 0x18111004 | [0098]                 subr.v  d:%SP a:%SP v:#h04                          ; Set up the stack
+0x00004128: 0x41d00000 | [0099]                 pops.r  d:REG_WORD                                  ; Get the index
+0x00004129: 0x41c00000 | [0100]                 pops.r  d:REG_SADR                                  ; Get the string address
+0x0000412a: 0x18011006 | [0101]                 addr.v  d:%SP a:%SP v:#h06                          ; Set up the stack
+0x0000412b: 0x08ed0000 | [0103]                 move.r  d:REG_ICHR s:REG_WORD                       ; Copy index to ichr
+0x0000412c: 0x187dd002 | [0104]                 arsr.v  d:REG_WORD a:REG_WORD v:#h02                ; Divide index in word by 4
+0x0000412d: 0x100ccd00 | [0105]                 addr.r  d:REG_SADR a:REG_SADR b:REG_WORD
+0x0000412e: 0x4cf00000 | [0106]                 load.o  d:REG_RTRN r:REG_SADR                       ; Load correct word into rtrn
+0x0000412f: 0x2d000003 | [0107]                 move.v  d:REG_WORD v:#h03                           ; Move 3 into word
+0x00004130: 0x182ee003 | [0108]                 andb.v  d:REG_ICHR a:REG_ICHR v:#h03                ; Mask off upper 30 of ichr
+0x00004131: 0x101ede00 | [0109]                 subr.r  d:REG_ICHR a:REG_WORD b:REG_ICHR            ; Subtract ichr from word into ichr
+0x00004132: 0x186ee003 | [0110]                 arsl.v  d:REG_ICHR a:REG_ICHR v:#h03                ; Multiply ichr by 8
+0x00004133: 0x10dffeff | [0111]                 masr.r  d:REG_RTRN a:REG_RTRN b:REG_ICHR v:#hFF     ; Mask and shift right rtrn by ichr
+0x00004134: 0x41e00000 | [0113]                 pops.r  d:REG_ICHR
+0x00004135: 0x41d00000 | [0114]                 pops.r  d:REG_WORD
+0x00004136: 0x41c00000 | [0115]                 pops.r  d:REG_SADR
+0x00004137: 0xf0000000 | [0116]                 rtrn.s                                              ; And return
+0x00004138: 0x61c00000 | [0124] :str_puts       push.r  s:REG_SADR
+0x00004139: 0x61d00000 | [0125]                 push.r  s:REG_CONT
+0x0000413a: 0x18111003 | [0126]                 subr.v  d:%SP a:%SP v:#h03                          ; Set up the stack
+0x0000413b: 0x2d000000 | [0127]                 move.v  d:REG_CONT v:#h00
+0x0000413c: 0x41c00000 | [0128]                 pops.r  d:REG_SADR                                  ; Get the string address
+0x0000413d: 0x18011004 | [0129]                 addr.v  d:%SP a:%SP v:#h04                          ; Set up the stack
+0x0000413e: 0x61c00000 | [0131]                 push.r  s:REG_SADR                                  ; Get the address on the stack
+0x0000413f: 0x61d00000 | [0133] :.strloop       push.r  s:REG_CONT
+0x00004140: 0xd00fffe4 | [0134]                 call.s  a:str_getc                                  
+0x00004141: 0x41d00000 | [0135]                 pops.r  d:REG_CONT                                  ; Get a character
+0x00004142: 0x18e0f000 | [0137]                 cmpr.v  a:%Zz v:#h00                                ; Is it zero?
+0x00004143: 0x81000006 | [0138]                 brch.a  c:%EQL a:.strend                            ; If so, exit
+0x00004144: 0x61f00000 | [0140]                 push.r  s:%Zz
+0x00004145: 0xd00fff08 | [0141]                 call.s  a:ser_send
+0x00004146: 0x41f00000 | [0143]                 pops.r  d:%Zz                                       ; Print it
+0x00004147: 0x180dd001 | [0145]                 addr.v  d:REG_CONT a:REG_CONT v:#h01                ; Increment counter
+0x00004148: 0x800ffff7 | [0146]                 brch.a  a:.strloop                                  ; Jump to top of loop
+0x00004149: 0x41c00000 | [0148] :.strend        pops.r  d:REG_SADR
+0x0000414a: 0x41d00000 | [0149]                 pops.r  d:REG_CONT
+0x0000414b: 0x41c00000 | [0150]                 pops.r  d:REG_SADR
+0x0000414c: 0xf0000000 | [0151]                 rtrn.s                                              ; And return
+0x0000414d: 0x61c00000 | [0160] :str_putsl      push.r  s:REG_SADR
+0x0000414e: 0x61d00000 | [0161]                 push.r  s:REG_ENDA   
+0x0000414f: 0x61e00000 | [0162]                 push.r  s:REG_CONT
+0x00004150: 0x18111004 | [0163]                 subr.v  d:%SP a:%SP v:#h04                          ; Set up the stack
+0x00004151: 0x2e000000 | [0164]                 move.v  d:REG_CONT v:#h00
+0x00004152: 0x41d00000 | [0165]                 pops.r  d:REG_ENDA                                  ; Get the string length
+0x00004153: 0x41c00000 | [0166]                 pops.r  d:REG_SADR                                  ; Get the string address
+0x00004154: 0x18011006 | [0167]                 addr.v  d:%SP a:%SP v:#h06                          ; Set up the stack
+0x00004155: 0x61c00000 | [0169]                 push.r  s:REG_SADR                                  ; Get the address on the stack
+0x00004156: 0x61e00000 | [0171] :.strloop       push.r  s:REG_CONT
+0x00004157: 0xd00fffcd | [0172]                 call.s  a:str_getc                                  
+0x00004158: 0x41e00000 | [0173]                 pops.r  d:REG_CONT                                  ; Get a character
+0x00004159: 0x18e0f000 | [0175]                 cmpr.v  a:%Zz v:#h00                                ; Is it zero?
+0x0000415a: 0x81000008 | [0176]                 brch.a  c:%EQL a:.strend                            ; If so, exit
+0x0000415b: 0x61f00000 | [0178]                 push.r  s:%Zz
+0x0000415c: 0xd00ffef1 | [0179]                 call.s  a:ser_send
+0x0000415d: 0x41f00000 | [0181]                 pops.r  d:%Zz                                       ; Print it
+0x0000415e: 0x180ee001 | [0183]                 addr.v  d:REG_CONT a:REG_CONT v:#h01                ; Increment counter
+0x0000415f: 0x181dd001 | [0184]                 subr.v  d:REG_ENDA a:REG_ENDA v:#h01                ; Increment counter
+0x00004160: 0x18e0d000 | [0185]                 cmpr.v  a:REG_ENDA v:#h00                           ; Are we done?
+0x00004161: 0x820ffff5 | [0186]                 brch.a  c:%NEQ a:.strloop                           ; If so, jump to top of loop
+0x00004162: 0x41c00000 | [0188] :.strend        pops.r  d:REG_SADR
+0x00004163: 0x41e00000 | [0189]                 pops.r  d:REG_CONT
+0x00004164: 0x41d00000 | [0190]                 pops.r  d:REG_ENDA
+0x00004165: 0x41c00000 | [0191]                 pops.r  d:REG_SADR
+0x00004166: 0xf0000000 | [0192]                 rtrn.s                                              ; And return
+                    ==>| [../rom/bios_sdcard.asm]
+0x00004167: 0x61c00000 | [0093] :sdc_init       push.r  s:REG_AWORK
+0x00004168: 0x61d00000 | [0094]                 push.r  s:REG_BWORK
+0x00004169: 0x61e00000 | [0095]                 push.r  s:REG_CWORK                                 ; Save the registers we're clobbering
+0x0000416a: 0x2c000000 | [0097]                 move.v  d:REG_AWORK v:#h00                    
+0x0000416b: 0x61c00000 | [0098]                 push.r  s:REG_AWORK
+0x0000416c: 0xd00fff2c | [0099]                 call.s  a:spi_addr
+0x0000416d: 0x41c00000 | [0100]                 pops.r  d:REG_AWORK                                 ; Disable all SPI devices
+0x0000416e: 0x2c00000b | [0105]                 move.v  d:REG_AWORK v:#h0B
+0x0000416f: 0xd00fff5f | [0107]                 call.s  a:spi_recv                                  
+0x00004170: 0x181cc001 | [0108]                 subr.v  d:REG_AWORK a:REG_AWORK v:#h01              ; Card needs >74 "dead" cycles to start up
+0x00004171: 0x18e0c000 | [0109]                 cmpr.v  a:REG_AWORK v:#h00                          ; We're gonna do 88
+0x00004172: 0x820ffffd | [0110]                 brch.a  c:%NEQ a:.startloop                         ; Loop until the card's good
+0x00004173: 0x2c000001 | [0112]                 move.v  d:REG_AWORK v:SDC_CARD_A                    
+0x00004174: 0x61c00000 | [0113]                 push.r  s:REG_AWORK
+0x00004175: 0xd00fff23 | [0114]                 call.s  a:spi_addr
+0x00004176: 0x41c00000 | [0115]                 pops.r  d:REG_AWORK                                 ; Initialize card A - gonna add selector later
+0x00004177: 0x2c000000 | [0118]                 move.v  d:REG_AWORK v:CMD_GO_IDLE_STATE
+0x00004178: 0x61c00000 | [0119]                 push.r  s:REG_AWORK                                 ; Store an R1 command
+0x00004179: 0x2c000000 | [0120]                 move.v  d:REG_AWORK v:#h00
+0x0000417a: 0x61c00000 | [0121]                 push.r  s:REG_AWORK                                 ; Trash argument
+0x0000417b: 0x2d000001 | [0122]                 move.v  d:REG_BWORK v:#h01
+0x0000417c: 0x186dd000 | [0123]                 arsl.v  d:REG_BWORK a:REG_BWORK v:R1_IDLE_STATE     ; Calculate the expected response
+0x0000417d: 0x2e000000 | [0124]                 move.v  d:REG_CWORK v:#h00                          ; Clear the counter
+0x0000417e: 0xd0000084 | [0129]                 call.s  a:sdc_scmd                                  ; Let's see if the card woke up
+0x0000417f: 0x10e0fd00 | [0130]                 cmpr.r  a:REG_RESP b:REG_BWORK                      ; Did we get the expected response?
+0x00004180: 0x81000005 | [0131]                 brch.a  c:%EQL a:.itsalive                          ; If so, break   
+0x00004181: 0x180ee001 | [0132]                 addr.v  d:REG_CWORK a:REG_CWORK v:#h01              ; Add to the counter
+0x00004182: 0x18e0e402 | [0133]                 cmpr.v  a:REG_CWORK v:#h02 s:#h04                   ; Have we tried for >512 cycles?
+0x00004183: 0x8100006e | [0134]                 brch.a  c:%EQL a:.deadalive                         ; If so, give up
+0x00004184: 0x800ffffa | [0135]                 brch.a  a:.aliveloop                                ; Loop back to top
+0x00004185: 0x41c00000 | [0139] :.itsalive      pops.r  d:REG_AWORK
+0x00004186: 0x41c00000 | [0140]                 pops.r  d:REG_AWORK                                 ; Restore the stack
+0x00004187: 0x2c000008 | [0142]                 move.v  d:REG_AWORK v:CMD_SEND_IF_COND
+0x00004188: 0x61c00000 | [0143]                 push.r  s:REG_AWORK
+0x00004189: 0x2c0001aa | [0144]                 move.v  d:REG_AWORK v:#h01AA
+0x0000418a: 0x61c00000 | [0145]                 push.r  s:REG_AWORK
+0x0000418b: 0xd0000077 | [0146]                 call.s  a:sdc_scmd
+0x0000418c: 0x41c00000 | [0147]                 pops.r  d:REG_AWORK
+0x0000418d: 0x41c00000 | [0148]                 pops.r  d:REG_AWORK                                 ; Check for voltage range (3.3v) and test pattern?
+0x0000418e: 0x2d000001 | [0151]                 move.v  d:REG_BWORK v:#h01
+0x0000418f: 0x186dd002 | [0152]                 arsl.v  d:REG_BWORK a:REG_BWORK v:R1_ILL_COMMAND    ; Calculate ill command check byte
+0x00004190: 0x10f0fd00 | [0154]                 test.r  a:REG_RESP b:REG_BWORK                      ; Is the command invalid?
+0x00004191: 0x8200000c | [0155]                 brch.a  c:%NEQ a:.notsdhc                           ; If not, it's an SD1 card
+0x00004192: 0xd00fff3c | [0156]                 call.s  a:spi_recv
+0x00004193: 0xd00fff3b | [0157]                 call.s  a:spi_recv                                  ; Waste some cycles
+0x00004194: 0xd00fff3a | [0158]                 call.s  a:spi_recv                                  ; This one's legit though
+0x00004195: 0x18f0f001 | [0162]                 test.v  a:REG_RESP v:#h01                           ; Is the voltage range correct?
+0x00004196: 0x8100005d | [0163]                 brch.a  c:%EQL a:.deadcard                          ; If not, give up
+0x00004197: 0xd00fff37 | [0164]                 call.s  a:spi_recv                                  ; This one's legit too
+0x00004198: 0x18e0f0aa | [0168]                 cmpr.v  a:REG_RESP v:#haa                           ; Is the test pattern correct?
+0x00004199: 0x8200005a | [0169]                 brch.a  c:%NEQ a:.deadcard                          ; If not, give up
+0x0000419a: 0x2e000001 | [0170]                 move.v  d:REG_CWORK v:#h01
+0x0000419b: 0x186ee001 | [0171]                 arsl.v  d:REG_CWORK a:REG_CWORK v:SD_RAW_SPEC_2     ; Set type to SD2
+0x0000419c: 0x80000014 | [0172]                 brch.a  a:.typegood                                 ; Converge
+0x0000419d: 0x2c000037 | [0175] :.notsdhc       move.v  d:REG_AWORK v:CMD_APP
+0x0000419e: 0x61c00000 | [0176]                 push.r  s:REG_AWORK
+0x0000419f: 0x2c000000 | [0177]                 move.v  d:REG_AWORK v:#h00
+0x000041a0: 0x61c00000 | [0178]                 push.r  s:REG_AWORK
+0x000041a1: 0xd0000061 | [0179]                 call.s  a:sdc_scmd
+0x000041a2: 0x41c00000 | [0180]                 pops.r  d:REG_AWORK
+0x000041a3: 0x41c00000 | [0181]                 pops.r  d:REG_AWORK                                 ; Send CMD_APP
+0x000041a4: 0x2c000029 | [0183]                 move.v  d:REG_AWORK v:CMD_SD_SEND_OP_COND           
+0x000041a5: 0x61c00000 | [0184]                 push.r  s:REG_AWORK
+0x000041a6: 0x2c000000 | [0185]                 move.v  d:REG_AWORK v:#h00
+0x000041a7: 0x61c00000 | [0186]                 push.r  s:REG_AWORK
+0x000041a8: 0xd000005a | [0187]                 call.s  a:sdc_scmd
+0x000041a9: 0x41c00000 | [0188]                 pops.r  d:REG_AWORK
+0x000041aa: 0x41c00000 | [0189]                 pops.r  d:REG_AWORK                                 ; Send another one to get the type
+0x000041ab: 0x2e000000 | [0191]                 move.v  d:REG_CWORK v:#h00                          ; Default type is MMC
+0x000041ac: 0x10e0fd00 | [0192]                 cmpr.r  a:REG_RESP b:REG_BWORK                      ; Is the command invalid?
+0x000041ad: 0x82000003 | [0193]                 brch.a  c:%NEQ a:.typegood                          ; If it is, it's MMC and we don't need to do anything else
+0x000041ae: 0x2e000001 | [0194]                 move.v  d:REG_CWORK v:#h01
+0x000041af: 0x186ee000 | [0195]                 arsl.v  d:REG_CWORK a:REG_CWORK v:SD_RAW_SPEC_1     ; Else, set the type to SD1 and we're out
+0x000041b0: 0x2d000000 | [0197] :.typegood      move.v  d:REG_BWORK v:#h00                          ; Counter for the upcoming loop
+0x000041b1: 0x18f0e003 | [0201] :.preploop      test.v  a:REG_CWORK v:#h03                          ; Is this an SD card?
+0x000041b2: 0x81000013 | [0202]                 brch.a  c:%EQL a:.itsmmc                            ; If not, go do some MMC stuff
+0x000041b3: 0x2c000037 | [0204]                 move.v  d:REG_AWORK v:CMD_APP
+0x000041b4: 0x61c00000 | [0205]                 push.r  s:REG_AWORK
+0x000041b5: 0x2c000000 | [0206]                 move.v  d:REG_AWORK v:#h00
+0x000041b6: 0x61c00000 | [0207]                 push.r  s:REG_AWORK
+0x000041b7: 0xd000004b | [0208]                 call.s  a:sdc_scmd
+0x000041b8: 0x41c00000 | [0209]                 pops.r  d:REG_AWORK
+0x000041b9: 0x41c00000 | [0210]                 pops.r  d:REG_AWORK                                 ; Send CMD_APP
+0x000041ba: 0x2c000029 | [0211]                 move.v  d:REG_AWORK v:CMD_SD_SEND_OP_COND           
+0x000041bb: 0x61c00000 | [0212]                 push.r  s:REG_AWORK
+0x000041bc: 0x2c000000 | [0213]                 move.v  d:REG_AWORK v:#h00
+0x000041bd: 0x18f0e002 | [0214]                 test.v  a:REG_CWORK v:#h02                          ; Is it SD2?
+0x000041be: 0x81000002 | [0215]                 brch.a  c:%EQL a:.prepcard                          ; If not, just send it
+0x000041bf: 0x2c804000 | [0216]                 move.v  d:REG_AWORK v:#h4000 s:#h08
+0x000041c0: 0x61c00000 | [0217] :.prepcard      push.r  s:REG_AWORK
+0x000041c1: 0xd0000041 | [0218]                 call.s  a:sdc_scmd
+0x000041c2: 0x41c00000 | [0219]                 pops.r  d:REG_AWORK
+0x000041c3: 0x41c00000 | [0220]                 pops.r  d:REG_AWORK                                 ; Send that last command
+0x000041c4: 0x80000008 | [0221]                 brch.a  a:.prepresp                                 ; Converge
+0x000041c5: 0x2c000029 | [0223] :.itsmmc        move.v  d:REG_AWORK v:CMD_SD_SEND_OP_COND
+0x000041c6: 0x61c00000 | [0224]                 push.r  s:REG_AWORK
+0x000041c7: 0x2c000000 | [0225]                 move.v  d:REG_AWORK v:#h00
+0x000041c8: 0x61c00000 | [0226]                 push.r  s:REG_AWORK
+0x000041c9: 0xd0000039 | [0227]                 call.s  a:sdc_scmd
+0x000041ca: 0x41c00000 | [0228]                 pops.r  d:REG_AWORK
+0x000041cb: 0x41c00000 | [0229]                 pops.r  d:REG_AWORK                                 ; Just one command thanks
+0x000041cc: 0x18f0f001 | [0231] :.prepresp      test.v  a:REG_RESP v:#h01                           ; Did we enter the idle state?
+0x000041cd: 0x81000005 | [0232]                 brch.a  c:%EQL a:.prepdone                          ; If so, the card's ready
+0x000041ce: 0x180dd001 | [0234]                 addr.v  d:REG_BWORK a:REG_BWORK v:#h01              ; Increment the counter
+0x000041cf: 0x18e0d480 | [0235]                 cmpr.v  a:REG_BWORK v:#h80 s:#h04                   ; Have we tried a few thousand times?
+0x000041d0: 0x81000023 | [0236]                 brch.a  c:%EQL a:.deadcard                          ; If so, give up
+0x000041d1: 0x800fffe0 | [0237]                 brch.a  a:.preploop                                 ; If not, loop back to top
+0x000041d2: 0x18f0e002 | [0239] :.prepdone      test.v  a:REG_CWORK v:#h02                          ; Is it SD2?
+0x000041d3: 0x81000013 | [0240]                 brch.a  c:%EQL a:.finishup                          ; If not, ignore the next block
+0x000041d4: 0x2c00003a | [0241]                 move.v  d:REG_AWORK v:CMD_READ_OCR
+0x000041d5: 0x61c00000 | [0242]                 push.r  s:REG_AWORK
+0x000041d6: 0x2c000000 | [0243]                 move.v  d:REG_AWORK v:#h00  
+0x000041d7: 0x61c00000 | [0244]                 push.r  s:REG_AWORK
+0x000041d8: 0xd000002a | [0245]                 call.s  a:sdc_scmd
+0x000041d9: 0x41c00000 | [0246]                 pops.r  d:REG_AWORK
+0x000041da: 0x41c00000 | [0247]                 pops.r  d:REG_AWORK                                 ; Send a command
+0x000041db: 0x18e0f000 | [0248]                 cmpr.v  a:REG_RESP v:#h00                           ; Did we get back a zero?
+0x000041dc: 0x82000017 | [0249]                 brch.a  c:%NEQ a:.deadcard                          ; If not, give up
+0x000041dd: 0xd00ffef1 | [0250]                 call.s  a:spi_recv
+0x000041de: 0x18f0f040 | [0254]                 test.v  a:REG_RESP v:#h40                           ; Is the argument gonna be h04000000?
+0x000041df: 0x81000004 | [0255]                 brch.a  c:%EQL a:.sdhcdone                          ; If not, finish here and converge
+0x000041e0: 0x2c000001 | [0256]                 move.v  d:REG_AWORK v:#h01
+0x000041e1: 0x186cc002 | [0257]                 arsl.v  d:REG_AWORK a:REG_AWORK v:SD_RAW_SPEC_SDHC  
+0x000041e2: 0x103eec00 | [0258]                 orbt.r  d:REG_CWORK a:REG_CWORK b:REG_AWORK         ; It's a real honest-to-goodness SDHC card
+0x000041e3: 0xd00ffeeb | [0259] :.sdhcdone      call.s  a:spi_recv
+0x000041e4: 0xd00ffeea | [0260]                 call.s  a:spi_recv
+0x000041e5: 0xd00ffee9 | [0261]                 call.s  a:spi_recv                                  ; Ignore the rest of the register
+0x000041e6: 0x2c000010 | [0263] :.finishup      move.v  d:REG_AWORK v:CMD_SET_BLOCKLEN
+0x000041e7: 0x61c00000 | [0264]                 push.r  s:REG_AWORK
+0x000041e8: 0x2c000200 | [0265]                 move.v  d:REG_AWORK v:#h200                     
+0x000041e9: 0x61c00000 | [0266]                 push.r  s:REG_AWORK
+0x000041ea: 0xd0000018 | [0267]                 call.s  a:sdc_scmd
+0x000041eb: 0x41c00000 | [0268]                 pops.r  d:REG_AWORK
+0x000041ec: 0x41c00000 | [0269]                 pops.r  d:REG_AWORK                                 ; Set the block size to 512
+0x000041ed: 0x18e0f000 | [0270]                 cmpr.v  a:REG_RESP v:#h00                           ; Did we get a zero back?
+0x000041ee: 0x82000005 | [0271]                 brch.a  c:%NEQ a:.deadcard                          ; If not, assume failure
+0x000041ef: 0x8000000a | [0272]                 brch.a  a:.livecard
+0x000041f0: 0xd00000fc | [0274]                 call.s  a:dbg_note
+0x000041f1: 0x41c00000 | [0276] :.deadalive     pops.r  d:REG_AWORK
+0x000041f2: 0x41c00000 | [0277]                 pops.r  d:REG_AWORK                                 ; Gotta restore those
+0x000041f3: 0x2c000000 | [0279] :.deadcard      move.v  d:REG_AWORK v:#h00                    
+0x000041f4: 0x61c00000 | [0280]                 push.r  s:REG_AWORK
+0x000041f5: 0xd00ffea3 | [0281]                 call.s  a:spi_addr
+0x000041f6: 0x41c00000 | [0282]                 pops.r  d:REG_AWORK                                 ; Disable all SPI devices
+0x000041f7: 0x2f0000ff | [0283]                 move.v  d:REG_RESP v:#hFF                           ; Bad value in register
+0x000041f8: 0x80000006 | [0284]                 brch.a  a:.exitinit
+0x000041f9: 0x2c000000 | [0286] :.livecard      move.v  d:REG_AWORK v:#h00                    
+0x000041fa: 0x61c00000 | [0287]                 push.r  s:REG_AWORK
+0x000041fb: 0xd00ffe9d | [0288]                 call.s  a:spi_addr
+0x000041fc: 0x41c00000 | [0289]                 pops.r  d:REG_AWORK                                 ; Disable all SPI devices
+0x000041fd: 0x08fe0000 | [0290]                 move.r  d:REG_RESP s:REG_CWORK                      ; Card type in register
+0x000041fe: 0x41e00000 | [0294] :.exitinit      pops.r  d:REG_CWORK
+0x000041ff: 0x41d00000 | [0295]                 pops.r  d:REG_BWORK
+0x00004200: 0x41c00000 | [0296]                 pops.r  d:REG_AWORK
+0x00004201: 0xf0000000 | [0297]                 rtrn.s                                              ; And return
+0x00004202: 0x61c00000 | [0305] :sdc_scmd       push.r  s:REG_COMD
+0x00004203: 0x61d00000 | [0306]                 push.r  s:REG_ARGM
+0x00004204: 0x18111003 | [0307]                 subr.v  d:%SP a:%SP v:#h03                          ; Set up the stack
+0x00004205: 0x41d00000 | [0308]                 pops.r  d:REG_ARGM                                  ; Get argument
+0x00004206: 0x41c00000 | [0309]                 pops.r  d:REG_COMD                                  ; Get command
+0x00004207: 0x18011005 | [0310]                 addr.v  d:%SP a:%SP v:#h05                          ; Set up the stack
+0x00004208: 0xd00ffec6 | [0312]                 call.s  a:spi_recv                                  ; Kill some clock cycles
+0x00004209: 0x183cc040 | [0314]                 orbt.v  d:REG_COMD a:REG_COMD v:#h40             
+0x0000420a: 0x61c00000 | [0315]                 push.r  s:REG_COMD
+0x0000420b: 0xd00ffea1 | [0316]                 call.s  a:spi_send
+0x0000420c: 0x41c00000 | [0317]                 pops.r  d:REG_COMD                                  ; Send command (with bit 6 set)
+0x0000420d: 0x61c00000 | [0319]                 push.r  s:REG_COMD              
+0x0000420e: 0x08cd0000 | [0320]                 move.r  d:REG_COMD s:REG_ARGM                       ; Back up the command - we're borrowing its register
+0x0000420f: 0x18ddccff | [0322]                 masr.v  d:REG_ARGM a:REG_COMD v:#hFF s:#h0C
+0x00004210: 0x61d00000 | [0323]                 push.r  s:REG_ARGM
+0x00004211: 0xd00ffe9b | [0324]                 call.s  a:spi_send 
+0x00004212: 0x41d00000 | [0325]                 pops.r  d:REG_ARGM
+0x00004213: 0x18ddc8ff | [0327]                 masr.v  d:REG_ARGM a:REG_COMD v:#hFF s:#h08
+0x00004214: 0x61d00000 | [0328]                 push.r  s:REG_ARGM
+0x00004215: 0xd00ffe97 | [0329]                 call.s  a:spi_send
+0x00004216: 0x41d00000 | [0330]                 pops.r  d:REG_ARGM
+0x00004217: 0x18ddc4ff | [0332]                 masr.v  d:REG_ARGM a:REG_COMD v:#hFF s:#h04
+0x00004218: 0x61d00000 | [0333]                 push.r  s:REG_ARGM
+0x00004219: 0xd00ffe93 | [0334]                 call.s  a:spi_send
+0x0000421a: 0x41d00000 | [0335]                 pops.r  d:REG_ARGM
+0x0000421b: 0x18ddc0ff | [0337]                 masr.v  d:REG_ARGM a:REG_COMD v:#hFF s:#h00
+0x0000421c: 0x61d00000 | [0338]                 push.r  s:REG_ARGM
+0x0000421d: 0xd00ffe8f | [0339]                 call.s  a:spi_send
+0x0000421e: 0x41d00000 | [0340]                 pops.r  d:REG_ARGM                                  ; Send argument (MSB first)
+0x0000421f: 0x41c00000 | [0342]                 pops.r  d:REG_COMD                                  ; Restore command
+0x00004220: 0x18e0c040 | [0344]                 cmpr.v  a:REG_COMD v:#h40                           ; Is this R1?
+0x00004221: 0x82000003 | [0345]                 brch.a  c:%NEQ a:.notgoid                           ; If not, loop down a few
+0x00004222: 0x2d000095 | [0346]                 move.v  d:REG_ARGM v:#h95       
+0x00004223: 0x80000006 | [0347]                 brch.a  a:.sendcrc                                  ; Converge
+0x00004224: 0x18e0c048 | [0348] :.notgoid       cmpr.v  a:REG_COMD v:#h48                           ; Is this conditional?
+0x00004225: 0x82000003 | [0349]                 brch.a  c:%NEQ a:.notcond                           ; If not, loop down a few
+0x00004226: 0x2d000087 | [0350]                 move.v  d:REG_ARGM v:#h87       
+0x00004227: 0x80000002 | [0351]                 brch.a  a:.sendcrc                                  ; Converge
+0x00004228: 0x2d0000ff | [0352] :.notcond       move.v  d:REG_ARGM v:#hFF                           ; Else, send garbage
+0x00004229: 0x61d00000 | [0354] :.sendcrc       push.r  s:REG_ARGM
+0x0000422a: 0xd00ffe82 | [0355]                 call.s  a:spi_send
+0x0000422b: 0x41d00000 | [0356]                 pops.r  d:REG_ARGM                                  ; Send the CRC checksum for the command 
+0x0000422c: 0x2d00000a | [0358]                 move.v  d:REG_ARGM v:#h0A
+0x0000422d: 0xd00ffea1 | [0359] :.resploop      call.s  a:spi_recv
+0x0000422e: 0x18e0f0ff | [0360]                 cmpr.v  a:REG_RESP v:#hFF
+0x0000422f: 0x82000005 | [0361]                 brch.a  c:%NEQ a:.printloop
+0x00004230: 0x181dd001 | [0362]                 subr.v  d:REG_ARGM a:REG_ARGM v:#h01
+0x00004231: 0x18e0d000 | [0363]                 cmpr.v  a:REG_ARGM v:#h00
+0x00004232: 0x81000002 | [0364]                 brch.a  c:%EQL a:.exitloop
+0x00004233: 0x800ffffa | [0365]                 brch.a  a:.resploop                                 ; Wait ten cycles for a response
+0x00004234: 0x41d00000 | [0371] :.exitloop      pops.r  d:REG_ARGM
+0x00004235: 0x41c00000 | [0372]                 pops.r  d:REG_COMD
+0x00004236: 0xf0000000 | [0373]                 rtrn.s                                              ; And return
+0x00004237: 0x61c00000 | [0383] :sdc_read       push.r  s:REG_ADDR
+0x00004238: 0x61d00000 | [0384]                 push.r  s:REG_BLOK
+0x00004239: 0x61e00000 | [0385]                 push.r  s:REG_WCNT
+0x0000423a: 0x18111004 | [0386]                 subr.v  d:%SP a:%SP v:#h04                          ; Set up the stack
+0x0000423b: 0x41d00000 | [0387]                 pops.r  d:REG_BLOK                                  ; Get argument
+0x0000423c: 0x41c00000 | [0388]                 pops.r  d:REG_ADDR                                  ; Get command
+0x0000423d: 0x18011006 | [0389]                 addr.v  d:%SP a:%SP v:#h06                          ; Set up the stack
+0x0000423e: 0x2f000001 | [0391]                 move.v  d:REG_RESP v:SDC_CARD_A                    
+0x0000423f: 0x61f00000 | [0392]                 push.r  s:REG_RESP
+0x00004240: 0xd00ffe58 | [0393]                 call.s  a:spi_addr
+0x00004241: 0x41f00000 | [0394]                 pops.r  d:REG_RESP                                 ; Initialize card A - gonna add selector later
+0x00004242: 0x186dd009 | [0396]                 arsl.v  d:REG_BLOK a:REG_BLOK v:#h09
+0x00004243: 0x2f000011 | [0398]                 move.v  d:REG_RESP v:CMD_READ_SINGLE_BLOCK
+0x00004244: 0x61f00000 | [0399]                 push.r  s:REG_RESP
+0x00004245: 0x61d00000 | [0400]                 push.r  s:REG_BLOK
+0x00004246: 0xd00fffbc | [0401]                 call.s  a:sdc_scmd
+0x00004247: 0x18111002 | [0402]                 subr.v  d:%SP a:%SP v:#h02                          ; Request a block read
+0x00004248: 0x18e0f000 | [0404]                 cmpr.v  a:REG_RESP v:#h00                           ; Did the card respond with a zero?
+0x00004249: 0x82000023 | [0405]                 brch.a  c:%NEQ a:.deadcard                          ; If not, give up
+0x0000424a: 0xd00ffe84 | [0407] :.readyloop     call.s  a:spi_recv                                  ; Get bytes
+0x0000424b: 0x18e0f0fe | [0408]                 cmpr.v  a:REG_RESP v:#hFE                           ; Did we get a start-of-frame?
+0x0000424c: 0x820ffffe | [0409]                 brch.a  c:%NEQ a:.readyloop                         ; If not, loop up a few
+0x0000424d: 0x2e000080 | [0411]                 move.v  d:REG_WCNT v:#h80                           ; Block size is 512, so we'll end up with 128 words
+0x0000424e: 0x2d000000 | [0412]                 move.v  d:REG_BLOK v:#h00                           ; We'll need that 
+0x0000424f: 0xd00ffe7f | [0414] :.readloop      call.s  a:spi_recv
+0x00004250: 0x186df018 | [0415]                 arsl.v  d:REG_BLOK a:REG_RESP v:#h18
+0x00004251: 0xd00ffe7d | [0416]                 call.s  a:spi_recv
+0x00004252: 0x186ff010 | [0417]                 arsl.v  d:REG_RESP a:REG_RESP v:#h10
+0x00004253: 0x103ddf00 | [0418]                 orbt.r  d:REG_BLOK a:REG_BLOK b:REG_RESP
+0x00004254: 0xd00ffe7a | [0419]                 call.s  a:spi_recv
+0x00004255: 0x186ff008 | [0420]                 arsl.v  d:REG_RESP a:REG_RESP v:#h08
+0x00004256: 0x103ddf00 | [0421]                 orbt.r  d:REG_BLOK a:REG_BLOK b:REG_RESP
+0x00004257: 0xd00ffe77 | [0422]                 call.s  a:spi_recv
+0x00004258: 0x103ddf00 | [0423]                 orbt.r  d:REG_BLOK a:REG_BLOK b:REG_RESP            ; Get a full word from the SD card
+0x00004259: 0x6cd00000 | [0424]                 stor.o  r:REG_ADDR s:REG_BLOK                       ; And store it
+0x0000425a: 0x180cc001 | [0426]                 addr.v  d:REG_ADDR a:REG_ADDR v:#h01                ; Increment the destination address...
+0x0000425b: 0x181ee001 | [0427]                 subr.v  d:REG_WCNT a:REG_WCNT v:#h01                ; ...and decrement the word counter
+0x0000425c: 0x18e0e000 | [0428]                 cmpr.v  a:REG_WCNT v:#h00                           ; Are we done?
+0x0000425d: 0x820ffff2 | [0429]                 brch.a  c:%NEQ a:.readloop                          ; If not, loop up a few
+0x0000425e: 0xd00ffe70 | [0431]                 call.s  a:spi_recv
+0x0000425f: 0xd00ffe6f | [0432]                 call.s  a:spi_recv                                  ; Receive the CRC, and throw it out
+0x00004260: 0x2f000000 | [0434]                 move.v  d:REG_RESP v:#h00                    
+0x00004261: 0x61f00000 | [0435]                 push.r  s:REG_RESP
+0x00004262: 0xd00ffe36 | [0436]                 call.s  a:spi_addr 
+0x00004263: 0x41f00000 | [0437]                 pops.r  d:REG_RESP                                  ; Deselect the card
+0x00004264: 0xd00ffe6a | [0439]                 call.s  a:spi_recv                                  ; Kill some time
+0x00004265: 0xd00ffe69 | [0440]                 call.s  a:spi_recv                                  ; Kill some time
+0x00004266: 0xd00ffe68 | [0441]                 call.s  a:spi_recv                                  ; Kill some time
+0x00004267: 0xd00ffe67 | [0442]                 call.s  a:spi_recv                                  ; Kill some time
+0x00004268: 0xd00ffe66 | [0443]                 call.s  a:spi_recv                                  ; Kill some time
+0x00004269: 0xd00ffe65 | [0444]                 call.s  a:spi_recv                                  ; Kill some time
+0x0000426a: 0x2f000000 | [0445]                 move.v  d:REG_RESP v:#h00                           ; It's good
+0x0000426b: 0x80000009 | [0446]                 brch.a  a:.exitread                                 ; Converge 
+0x0000426c: 0x61f00000 | [0448] :.deadcard      push.r  s:REG_RESP
+0x0000426d: 0xd00ffe7f | [0449]                 call.s  a:str_hnum
+0x0000426e: 0x41f00000 | [0450]                 pops.r  d:REG_RESP
+0x0000426f: 0x2f000000 | [0451]                 move.v  d:REG_RESP v:#h00                    
+0x00004270: 0x61f00000 | [0452]                 push.r  s:REG_RESP
+0x00004271: 0xd00ffe27 | [0453]                 call.s  a:spi_addr
+0x00004272: 0x41f00000 | [0454]                 pops.r  d:REG_RESP                                  ; Deselect the card
+0x00004273: 0x2f0000ff | [0456]                 move.v  d:REG_RESP v:#hFF                           ; CRASH
+0x00004274: 0x41e00000 | [0458] :.exitread      pops.r  d:REG_WCNT
+0x00004275: 0x41d00000 | [0459]                 pops.r  d:REG_BLOK
+0x00004276: 0x41c00000 | [0460]                 pops.r  d:REG_ADDR
+0x00004277: 0xf0000000 | [0461]                 rtrn.s                                              ; And return
+0x00004278: 0x61c00000 | [0472] :sdc_writ       push.r  s:REG_ADDR
+0x00004279: 0x61d00000 | [0473]                 push.r  s:REG_BLOK
+0x0000427a: 0x61e00000 | [0474]                 push.r  s:REG_WCNT
+0x0000427b: 0x18111004 | [0475]                 subr.v  d:%SP a:%SP v:#h04                          ; Set up the stack
+0x0000427c: 0x41d00000 | [0476]                 pops.r  d:REG_BLOK                                  ; Get argument
+0x0000427d: 0x41c00000 | [0477]                 pops.r  d:REG_ADDR                                  ; Get command
+0x0000427e: 0x18011006 | [0478]                 addr.v  d:%SP a:%SP v:#h06                          ; Set up the stack
+0x0000427f: 0x2f000001 | [0480]                 move.v  d:REG_RESP v:SDC_CARD_A                    
+0x00004280: 0x61f00000 | [0481]                 push.r  s:REG_RESP
+0x00004281: 0xd00ffe17 | [0482]                 call.s  a:spi_addr
+0x00004282: 0x41f00000 | [0483]                 pops.r  d:REG_RESP                                  ; Initialize card A - gonna add selector later
+0x00004283: 0x2f000018 | [0485]                 move.v  d:REG_RESP v:CMD_WRITE_SINGLE_BLOCK
+0x00004284: 0x61f00000 | [0486]                 push.r  s:REG_RESP
+0x00004285: 0x61d00000 | [0487]                 push.r  s:REG_BLOK
+0x00004286: 0xd00fff7c | [0488]                 call.s  a:sdc_scmd
+0x00004287: 0x18111002 | [0489]                 subr.v  d:%SP a:%SP v:#h02                          ; Request a block write
+0x00004288: 0x18e0f000 | [0491]                 cmpr.v  a:REG_RESP v:#h00                           ; Did the card respond with a zero?
+0x00004289: 0x8200002e | [0492]                 brch.a  c:%NEQ a:.deadcard                          ; If not, give up
+0x0000428a: 0x2f0000fe | [0494]                 move.v  d:REG_RESP v:#hFE
+0x0000428b: 0x61f00000 | [0495]                 push.r  s:REG_RESP 
+0x0000428c: 0xd00ffe20 | [0496]                 call.s  a:spi_send
+0x0000428d: 0x41f00000 | [0497]                 pops.r  d:REG_RESP                                  ; Send the start byte
+0x0000428e: 0x2e000080 | [0499]                 move.v  d:REG_WCNT v:#h80                           ; 512 bytes, 128 words
+0x0000428f: 0x4cd00000 | [0501] :.writeloop     load.o  r:REG_ADDR d:REG_BLOK
+0x00004290: 0x61c00000 | [0502]                 push.r  s:REG_ADDR
+0x00004291: 0x182cdcff | [0504]                 andb.v  d:REG_ADDR a:REG_BLOK v:#hFF s:#h0C
+0x00004292: 0x188dd018 | [0505]                 losr.v  d:REG_BLOK a:REG_BLOK v:#h18
+0x00004293: 0x61d00000 | [0506]                 push.r  s:REG_BLOK
+0x00004294: 0xd00ffe18 | [0507]                 call.s  a:spi_send
+0x00004295: 0x41d00000 | [0508]                 pops.r  d:REG_BLOK
+0x00004296: 0x182cd8ff | [0510]                 andb.v  d:REG_ADDR a:REG_BLOK v:#hFF s:#h08
+0x00004297: 0x188dd010 | [0511]                 losr.v  d:REG_BLOK a:REG_BLOK v:#h10
+0x00004298: 0x61d00000 | [0512]                 push.r  s:REG_BLOK
+0x00004299: 0xd00ffe13 | [0513]                 call.s  a:spi_send
+0x0000429a: 0x41d00000 | [0514]                 pops.r  d:REG_BLOK
+0x0000429b: 0x182cd4ff | [0516]                 andb.v  d:REG_ADDR a:REG_BLOK v:#hFF s:#h04
+0x0000429c: 0x188dd008 | [0517]                 losr.v  d:REG_BLOK a:REG_BLOK v:#h08
+0x0000429d: 0x61d00000 | [0518]                 push.r  s:REG_BLOK
+0x0000429e: 0xd00ffe0e | [0519]                 call.s  a:spi_send
+0x0000429f: 0x41d00000 | [0520]                 pops.r  d:REG_BLOK
+0x000042a0: 0x182cd0ff | [0522]                 andb.v  d:REG_ADDR a:REG_BLOK v:#hFF s:#h00
+0x000042a1: 0x61d00000 | [0523]                 push.r  s:REG_BLOK
+0x000042a2: 0xd00ffe0a | [0524]                 call.s  a:spi_send
+0x000042a3: 0x41d00000 | [0525]                 pops.r  d:REG_BLOK
+0x000042a4: 0x41c00000 | [0527]                 pops.r  d:REG_ADDR                                  ; Send a word to the SD card
+0x000042a5: 0x180cc001 | [0529]                 addr.v  d:REG_ADDR a:REG_ADDR v:#h01                ; Increment the destination address...
+0x000042a6: 0x181ee001 | [0530]                 subr.v  d:REG_WCNT a:REG_WCNT v:#h01                ; ...and decrement the word counter
+0x000042a7: 0x18e0e000 | [0531]                 cmpr.v  a:REG_WCNT v:#h00                           ; Are we done?
+0x000042a8: 0x820fffe7 | [0532]                 brch.a  c:%NEQ a:.writeloop                         ; If not, loop up a few
+0x000042a9: 0x2f0000ff | [0534]                 move.v  d:REG_RESP v:#hFF
+0x000042aa: 0x61f00000 | [0535]                 push.r  s:REG_RESP
+0x000042ab: 0xd00ffe01 | [0536]                 call.s  a:spi_send
+0x000042ac: 0xd00ffe00 | [0537]                 call.s  a:spi_send
+0x000042ad: 0x41f00000 | [0538]                 pops.r  d:REG_RESP                                  ; Send a dummy CRC
+0x000042ae: 0xd00ffe20 | [0540] :.readyloop     call.s  a:spi_recv                                  ; Get bytes
+0x000042af: 0x18e0f0ff | [0541]                 cmpr.v  a:REG_RESP v:#hFF                           ; Did we get an idle?
+0x000042b0: 0x820ffffe | [0542]                 brch.a  c:%NEQ a:.readyloop                         ; If not, loop up a few
+0x000042b1: 0x2f000000 | [0544]                 move.v  d:REG_RESP v:#h00                    
+0x000042b2: 0x61f00000 | [0545]                 push.r  s:REG_RESP
+0x000042b3: 0xd00ffde5 | [0546]                 call.s  a:spi_addr
+0x000042b4: 0x41f00000 | [0547]                 pops.r  d:REG_RESP                                  ; Deselect the card
+0x000042b5: 0x2f000000 | [0549]                 move.v  d:REG_RESP v:#h00                           ; It's good
+0x000042b6: 0x80000006 | [0550]                 brch.a  a:.exitwrite                                ; Converge 
+0x000042b7: 0x2f000000 | [0552] :.deadcard      move.v  d:REG_RESP v:#h00                    
+0x000042b8: 0x61f00000 | [0553]                 push.r  s:REG_RESP
+0x000042b9: 0xd00ffddf | [0554]                 call.s  a:spi_addr
+0x000042ba: 0x41f00000 | [0555]                 pops.r  d:REG_RESP                                  ; Deselect the card
+0x000042bb: 0x2f0000ff | [0557]                 move.v  d:REG_RESP v:#hFF                           ; CRASH
+0x000042bc: 0x41e00000 | [0559] :.exitwrite     pops.r  d:REG_WCNT
+0x000042bd: 0x41d00000 | [0560]                 pops.r  d:REG_BLOK
+0x000042be: 0x41c00000 | [0561]                 pops.r  d:REG_ADDR
+0x000042bf: 0xf0000000 | [0562]                 rtrn.s                                              ; And return
+                    ==>| [../rom/bios_debug.asm]
+0x000042c0: 0x0a0a416e |
+            0x20657272 |
+            0x6f722068 |
+            0x6173206f |
+            0x63637572 |
+            0x65642e0a |
+            0x00000000 | [0010] :.str_warn      !str "\n\nAn error has occured.\n\0"
+0x000042c7: 0x0a0a4120 |
+            0x66617461 |
+            0x6c206572 |
+            0x726f7220 |
+            0x68617320 |
+            0x6f636375 |
+            0x7265642e |
+            0x0a000000 | [0011] :.str_fatal     !str "\n\nA fatal error has occured.\n\0"
+0x000042cf: 0x43616c6c |
+            0x65642061 |
+            0x74200000 | [0012] :.str_return    !str "Called at \0"
+0x000042d2: 0x53746163 |
+            0x6b747261 |
+            0x63652028 |
+            0x746f7020 |
+            0x3136293a |
+            0x0a000000 | [0013] :.str_trace     !str "Stacktrace (top 16):\n\0";
+0x000042d8: 0x52656769 |
+            0x73746572 |
+            0x733a0a00 | [0014] :.str_regs      !str "Registers:\n\0";
+0x000042db: 0x52657375 |
+            0x6d696e67 |
+            0x2e0a0a00 | [0015] :.str_resume    !str "Resuming.\n\n\0"
+0x000042de: 0x48616c74 |
+            0x696e672e |
+            0x0a0a0000 | [0016] :.str_halt      !str "Halting.\n\n\0"
+0x000042e1: 0x80000001 | [0018] :dbg_warn       brch.a  a:dbg_eror
+0x000042e2: 0x2f0042c7 | [0020] :dbg_eror       move.v  d:%Zz v:.str_fatal
+0x000042e3: 0x61f00000 | [0021]                 push.r  s:%Zz
+0x000042e4: 0xd00ffe54 | [0022]                 call.s  a:str_puts
+0x000042e5: 0x41f00000 | [0023]                 pops.r  d:%Zz                       ; Print fatal warning message
+0x000042e6: 0x2f0042cf | [0025]                 move.v  d:%Zz v:.str_return
+0x000042e7: 0x61f00000 | [0026]                 push.r  s:%Zz
+0x000042e8: 0xd00ffe50 | [0027]                 call.s  a:str_puts
+0x000042e9: 0x41f00000 | [0028]                 pops.r  d:%Zz                       ; Print called-from message
+0x000042ea: 0xd00ffe02 | [0030]                 call.s  a:str_hnum                  ; Print called-from address
+0x000042eb: 0x04200000 | [0032]                 halt.i                              ; Stop    
+0x000042ec: 0x61f00000 | [0035] :dbg_note       push.r  s:%Zz
+0x000042ed: 0x2f0042cf | [0037]                 move.v  d:%Zz v:.str_return
+0x000042ee: 0x61f00000 | [0038]                 push.r  s:%Zz
+0x000042ef: 0xd00ffe49 | [0039]                 call.s  a:str_puts
+0x000042f0: 0x41f00000 | [0040]                 pops.r  d:%Zz                       ; Print called-from message
+0x000042f1: 0x2f0000f0 | [0042]                 move.v  d:%Zz v:#hF0
+0x000042f2: 0x181ff001 | [0043] :.subrloop      subr.v  d:%Zz a:%Zz v:#h01
+0x000042f3: 0x18e0f000 | [0044]                 cmpr.v  a:%Zz v:#h00
+0x000042f4: 0x820ffffe | [0045]                 brch.a  c:%NEQ a:.subrloop
+0x000042f5: 0x18111001 | [0047]                 subr.v  d:%SP a:%SP v:#h01
+0x000042f6: 0xd00ffdf6 | [0048]                 call.s  a:str_hnum                  ; Print called-from address
+0x000042f7: 0x18011001 | [0049]                 addr.v  d:%SP a:%SP v:#h01
+0x000042f8: 0x2f00000a | [0051]                 move.v  d:%Zz v:#h0A                  
+0x000042f9: 0x61f00000 | [0052]                 push.r  s:%Zz
+0x000042fa: 0xd00ffd53 | [0053]                 call.s  a:ser_send
+0x000042fb: 0x41f00000 | [0054]                 pops.r  d:%Zz                                   
+0x000042fc: 0x2f00000d | [0055]                 move.v  d:%Zz v:#h0D                  
+0x000042fd: 0x61f00000 | [0056]                 push.r  s:%Zz
+0x000042fe: 0xd00ffd4f | [0057]                 call.s  a:ser_send 
+0x000042ff: 0x41f00000 | [0058]                 pops.r  d:%Zz                       ; Drop down a line
+0x00004300: 0x41f00000 | [0060]                 pops.r  d:%Zz
+0x00004301: 0xf0000000 | [0061]                 rtrn.s
+0x00004302: 0xf0000000 | [0064] :dbg_trac       rtrn.s
+0x00004303: 0xf0000000 | [0066] :dbg_regs       rtrn.s
+                    ==>| [ifirm.asm]
+0x00004304: 0x65705249 |
+            0x53432049 |
+            0x6e746572 |
+            0x61637469 |
+            0x76652046 |
+            0x69726d77 |
+            0x61726520 |
+            0x76302e33 |
+            0x0a0a0000 | [0085] :.welcome       !str "epRISC Interactive Firmware v0.3\n\n"
+0x0000430d: 0x6f6b0a00 | [0086] :.okprompt      !str "ok\n"
+0x0000430e: 0x6d617463 |
+            0x68200000 | [0087] :.tmpmatch      !str "match "
+0x00004310: 0x576f7264 |
+            0x20000000 | [0088] :.wordhit       !str "Word "
+0x00004312: 0x3e3e3e3e |
+            0x00000000 | [0092] :.setleft       !str ">>>>"
+0x00004314: 0x3c3c3c3c |
+            0x0a000000 | [0093] :.setright      !str "<<<<\n"
+0x00004316: 0x43757272 |
+            0x656e7420 |
+            0x73746163 |
+            0x6b20285b |
+            0x6473702d |
+            0x325d2c20 |
+            0x5b647370 |
+            0x2d315d2c |
+            0x205b6473 |
+            0x705d293a |
+            0x0a000000 | [0094] :.setstack      !str "Current stack ([dsp-2], [dsp-1], [dsp]):\n"
+0x00004321: 0x47656e65 |
+            0x7269632f |
+            0x756e6465 |
+            0x66696e65 |
+            0x64206572 |
+            0x726f7200 | [0096] :.generic       !str "Generic/undefined error"
+0x00004327: 0x53746163 |
+            0x6b206f76 |
+            0x6572666c |
+            0x6f770000 | [0097] :.overflow      !str "Stack overflow"
+0x0000432b: 0x53746163 |
+            0x6b20756e |
+            0x64657266 |
+            0x6c6f7700 | [0098] :.underflow     !str "Stack underflow"
+0x0000432f: 0x556e6465 |
+            0x66696e65 |
+            0x6420776f |
+            0x72640000 | [0099] :.undefined     !str "Undefined word"
+0x00004333: 0x00004321 |
+            0x00004327 |
+            0x0000432b |
+            0x0000432f | [0101] :.lookup        !data $ifirm_errstr.generic $ifirm_errstr.overflow $ifirm_errstr.underflow $ifirm_errstr.undefined
+0x00004337: 0x64e00000 | [0108] :sub_pushds     stor.o  s:%AuxOutput r:%DSP o:#h00                  ; Save data to the stack
+0x00004338: 0x18044001 | [0109]                 addr.v  d:%DSP a:%DSP v:#h01                        ; Increment DSP
+0x00004339: 0xf0000000 | [0110]                 rtrn.s                                              ; Return
+0x0000433a: 0x18144001 | [0116] :sub_popsds     subr.v  d:%DSP a:%DSP v:#h01                        ; Decrement DSP
+0x0000433b: 0x18e04410 | [0118]                 cmpr.v  a:%DSP v:#h10 s:#h04    
+0x0000433c: 0x8e000003 | [0119]                 brch.a  c:%LST a:.underflowd                        ; Report underflow errors
+0x0000433d: 0x44f00000 | [0121]                 load.o  d:%Output r:%DSP o:#h00                     ; Load data from the stack
+0x0000433e: 0xf0000000 | [0122]                 rtrn.s                                              ; Return
+0x0000433f: 0x18044001 | [0124] :.underflowd    addr.v  d:%DSP a:%DSP v:#h01                        ; Fix stack
+0x00004340: 0x2c000002 | [0125]                 move.v  d:%Temp v:#h02
+0x00004341: 0x61c00000 | [0126]                 push.r  s:%Temp
+0x00004342: 0xd00000cf | [0127]                 call.s  a:sub_callerror                             ; Report the failure
+0x00004343: 0x65e00000 | [0133] :sub_pushrs     stor.o  s:%AuxOutput r:%RSP o:#h00                  ; Save data to the stack
+0x00004344: 0x18055001 | [0134]                 addr.v  d:%RSP a:%RSP v:#h01                        ; Increment RSP
+0x00004345: 0xf0000000 | [0135]                 rtrn.s                                              ; Return
+0x00004346: 0x18155001 | [0141] :sub_popsrs     subr.v  d:%RSP a:%RSP v:#h01                        ; Decrement RSP
+0x00004347: 0x18e05412 | [0143]                 cmpr.v  a:%RSP v:#h12 s:#h04    
+0x00004348: 0x8e0ffff7 | [0144]                 brch.a  c:%LST a:.underflowd                        ; Report underflow errors
+0x00004349: 0x45f00000 | [0146]                 load.o  d:%Output r:%RSP o:#h00                     ; Load data from the stack
+0x0000434a: 0xf0000000 | [0147]                 rtrn.s                                              ; Return
+0x0000434b: 0x18055001 | [0149] :.underflowr    addr.v  d:%RSP a:%RSP v:#h01                        ; Fix stack
+0x0000434c: 0x2c000002 | [0150]                 move.v  d:%Temp v:#h02
+0x0000434d: 0x61c00000 | [0151]                 push.r  s:%Temp
+0x0000434e: 0xd00000c3 | [0152]                 call.s  a:sub_callerror                             ; Report the failure
+0x0000434f: 0x61800000 | [0164] :sub_tokenize   push.r  s:%CurrAddr
+0x00004350: 0x61900000 | [0165]                 push.r  s:%TokenBrk
+0x00004351: 0x18111003 | [0166]                 subr.v  d:%SP a:%SP v:#h03
+0x00004352: 0x41900000 | [0167]                 pops.r  d:%TokenBrk
+0x00004353: 0x41800000 | [0168]                 pops.r  d:%CurrAddr                                 
+0x00004354: 0x18011005 | [0169]                 addr.v  d:%SP a:%SP v:#h05                          ; Grab parameters from the stack
+0x00004355: 0x2e000000 | [0171]                 move.v  d:%StrLen v:#h00                            ; The string has no length right now
+0x00004356: 0x2f000000 | [0172]                 move.v  d:%StrAddr v:#h00                           ; And it doesn't exist in memory yet
+0x00004357: 0x48c00000 | [0174] :.leadloop      load.o  d:%Temp r:%CurrAddr                         ; Get the character
+0x00004358: 0x10e0c900 | [0176]                 cmpr.r  a:%Temp b:%TokenBrk                         ; Is it the token character?
+0x00004359: 0x82000005 | [0177]                 brch.a  c:%NEQ a:.subword                           ; If not, exit
+0x0000435a: 0x18e0c000 | [0179]                 cmpr.v  a:%Temp v:#h00                              ; Is it the null terminator?
+0x0000435b: 0x8100000c | [0180]                 brch.a  c:%EQL a:.cleanup                           ; If so, there isn't a word in here at all and we should leave 
+0x0000435c: 0x18088001 | [0182]                 addr.v  d:%CurrAddr a:%CurrAddr v:#h01             
+0x0000435d: 0x800ffffa | [0183]                 brch.a  a:.leadloop                                 ; Else, keep on truckin
+0x0000435e: 0x08f80000 | [0185] :.subword       move.r  d:%StrAddr s:%CurrAddr                      ; This character is the first character in the string
+0x0000435f: 0x48c00000 | [0187] :.wordloop      load.o  d:%Temp r:%CurrAddr                         ; Get the character
+0x00004360: 0x10e0c900 | [0189]                 cmpr.r  a:%Temp b:%TokenBrk                         ; Is it the token character?
+0x00004361: 0x81000006 | [0190]                 brch.a  c:%EQL a:.tokenfound                        ; If so, exit
+0x00004362: 0x18e0c000 | [0192]                 cmpr.v  a:%Temp v:#h00                              ; Is it the null terminator?
+0x00004363: 0x81000004 | [0193]                 brch.a  c:%EQL a:.tokenfound                        ; If so, behave like you found the token character
+0x00004364: 0x18088001 | [0195]                 addr.v  d:%CurrAddr a:%CurrAddr v:#h01             
+0x00004365: 0x180ee001 | [0196]                 addr.v  d:%StrLen a:%StrLen v:#h01                  ; The string is ONE CHARACTER LONGER
+0x00004366: 0x800ffff9 | [0197]                 brch.a  a:.wordloop                                 ; Else, keep on truckin
+0x00004367: 0x41900000 | [0201] :.cleanup       pops.r  d:%TokenBrk
+0x00004368: 0x41800000 | [0202]                 pops.r  d:%CurrAddr
+0x00004369: 0xf0000000 | [0203]                 rtrn.s                                              ; Restore and exit
+0x0000436a: 0x61800000 | [0216] :sub_dictlookup push.r  s:%StrAddr
+0x0000436b: 0x61900000 | [0217]                 push.r  s:%StrLen
+0x0000436c: 0x18111003 | [0218]                 subr.v  d:%SP a:%SP v:#h03
+0x0000436d: 0x41900000 | [0219]                 pops.r  d:%StrLen
+0x0000436e: 0x41800000 | [0220]                 pops.r  d:%StrAddr                                 
+0x0000436f: 0x18011005 | [0221]                 addr.v  d:%SP a:%SP v:#h05                          ; Grab parameters from the stack
+0x00004370: 0x2a006000 | [0223]                 move.v  d:%DictAddr v:#h6000                        ; Reset the dictionary pointer
+0x00004371: 0x4ac00000 | [0225] :.searchloop    load.o  d:%Temp r:%DictAddr                         ; Get the description word of the entry
+0x00004372: 0x18e0c000 | [0227]                 cmpr.v  d:%Temp a:%Temp v:#h00                      ; Is the word zero?
+0x00004373: 0x81000022 | [0228]                 brch.a  c:%EQL a:.noentry                           ; If so, we ran out of entries
+0x00004374: 0x18dccaff | [0230]                 masr.v  d:%Temp a:%Temp v:#hFF s:#h0A               ; Extract the word length
+0x00004375: 0x10e09c00 | [0232]                 cmpr.r  a:%StrLen b:%Temp                           ; Do the word lengths match?
+0x00004376: 0x8200001b | [0233]                 brch.a  c:%NEQ a:.nolength                          ; If not, loop down a few
+0x00004377: 0x61800000 | [0235]                 push.r  s:%StrAddr
+0x00004378: 0x61c00000 | [0236]                 push.r  s:%Temp
+0x00004379: 0x61a00000 | [0237]                 push.r  s:%DictAddr                                 ; This will save us from hard math later on
+0x0000437a: 0x180aa001 | [0239]                 addr.v  d:%DictAddr a:%DictAddr v:#h01              ; String begins one word after definition
+0x0000437b: 0x61a00000 | [0241] :.nameloop      push.r  s:%DictAddr
+0x0000437c: 0x61800000 | [0242]                 push.r  s:%StrAddr
+0x0000437d: 0x4aa00000 | [0244]                 load.o  d:%DictAddr r:%DictAddr
+0x0000437e: 0x48800000 | [0245]                 load.o  d:%StrAddr r:%StrAddr                       ; A particularly stupid way of saving a couple of registers
+0x0000437f: 0x10e0a800 | [0247]                 cmpr.r  a:%DictAddr b:%StrAddr                      ; Match?
+0x00004380: 0x8200000c | [0248]                 brch.a  c:%NEQ a:.nomatch                           ; If not, abort
+0x00004381: 0x41800000 | [0250]                 pops.r  d:%StrAddr
+0x00004382: 0x41a00000 | [0251]                 pops.r  d:%DictAddr
+0x00004383: 0x18088001 | [0253]                 addr.v  d:%StrAddr a:%StrAddr v:#h01
+0x00004384: 0x180aa001 | [0254]                 addr.v  d:%DictAddr a:%DictAddr v:#h01
+0x00004385: 0x181cc001 | [0255]                 subr.v  d:%Temp a:%Temp v:#h01                      ; Advance da pointers
+0x00004386: 0x18e0c000 | [0257]                 cmpr.v  a:%Temp v:#h00
+0x00004387: 0x820ffff4 | [0258]                 brch.a  c:%NEQ a:.nameloop                          ; Loop back up if that word matched
+0x00004388: 0x41f00000 | [0260] :.match         pops.r  d:%EntryAddr
+0x00004389: 0x41e00000 | [0261]                 pops.r  d:%EntryLen
+0x0000438a: 0x41800000 | [0262]                 pops.r  d:%StrAddr                                  ; Combo of cleanup and saving the dictionary entry
+0x0000438b: 0x8000000c | [0263]                 brch.a  a:.cleanup
+0x0000438c: 0x41800000 | [0265] :.nomatch       pops.r  d:%StrAddr
+0x0000438d: 0x41a00000 | [0266]                 pops.r  d:%DictAddr                                 ; Cleanup
+0x0000438e: 0x41a00000 | [0268]                 pops.r  d:%DictAddr
+0x0000438f: 0x41c00000 | [0269]                 pops.r  d:%Temp
+0x00004390: 0x41800000 | [0270]                 pops.r  d:%StrAddr                                  ; Restore the variables we saved
+0x00004391: 0x180cc001 | [0272] :.nolength      addr.v  d:%Temp a:%Temp v:#h01
+0x00004392: 0x100aac00 | [0273]                 addr.r  d:%DictAddr a:%DictAddr b:%Temp
+0x00004393: 0x4aa00000 | [0274]                 load.o  d:%DictAddr r:%DictAddr                     ; Get the address of the next entry
+0x00004394: 0x800fffdd | [0275]                 brch.a  a:.searchloop
+0x00004395: 0x2f000000 | [0277] :.noentry       move.v  d:%EntryAddr v:#h00
+0x00004396: 0x2e000000 | [0278]                 move.v  d:%EntryLen v:#h00                          ; There was no match, so set everything to zero
+0x00004397: 0x41900000 | [0280] :.cleanup       pops.r  d:%StrLen
+0x00004398: 0x41800000 | [0281]                 pops.r  d:%StrAddr
+0x00004399: 0xf0000000 | [0282]                 rtrn.s                                              ; Restore and exit
+0x0000439a: 0x61800000 | [0295] :sub_numconvert push.r  s:%StrAddr
+0x0000439b: 0x61900000 | [0296]                 push.r  s:%StrLen
+0x0000439c: 0x61a00000 | [0297]                 push.r  s:%Base
+0x0000439d: 0x18111004 | [0298]                 subr.v  d:%SP a:%SP v:#h04
+0x0000439e: 0x41900000 | [0299]                 pops.r  d:%StrLen
+0x0000439f: 0x41800000 | [0300]                 pops.r  d:%StrAddr                                 
+0x000043a0: 0x18011006 | [0301]                 addr.v  d:%SP a:%SP v:#h06                          ; Grab parameters from the stack
+0x000043a1: 0x2a00000a | [0303]                 move.v  d:%Base v:#h0A                              ; The default base is 10
+0x000043a2: 0x2e000000 | [0304]                 move.v  d:%Status v:#h00                            ; Clear the status register
+0x000043a3: 0x48c00000 | [0306] :.modloop       load.o  d:%Temp r:%StrAddr                          ; Load the character
+0x000043a4: 0x18e0c000 | [0308] :.chkpremature  cmpr.v  a:%Temp v:#h00                              ; Is it empty?
+0x000043a5: 0x82000002 | [0309]                 brch.a  c:%NEQ a:.chknegative                       ; If not, loop down
+0x000043a6: 0x80000039 | [0310]                 brch.a  a:.numberfail                               ; Abort - there is no number here
+0x000043a7: 0x18e0c02d | [0312] :.chknegative   cmpr.v  a:%Temp v:#c'-'                             ; Is it negative?
+0x000043a8: 0x82000003 | [0313]                 brch.a  c:%NEQ a:.chkpound                          ; If not, loop down
+0x000043a9: 0x183ee001 | [0314]                 orbt.v  d:%Status a:%Status v:#h01                  ; Record that the value should be negative
+0x000043aa: 0x80000010 | [0315]                 brch.a  a:.nextmod                                  ; Move on
+0x000043ab: 0x18e0c023 | [0317] :.chkpound      cmpr.v  a:%Temp v:#c'#'                             ; Is it decimal?
+0x000043ac: 0x82000003 | [0318]                 brch.a  c:%NEQ a:.chkampersand                      ; If not, loop down
+0x000043ad: 0x2a00000a | [0319]                 move.v  d:%Base v:#h0A                              ; Set the base to 10
+0x000043ae: 0x8000000c | [0320]                 brch.a  a:.nextmod                                  ; Move on
+0x000043af: 0x18e0c026 | [0322] :.chkampersand  cmpr.v  a:%Temp v:#c'&'                             ; Is it decimal?
+0x000043b0: 0x82000003 | [0323]                 brch.a  c:%NEQ a:.chkdollar                         ; If not, loop down
+0x000043b1: 0x2a00000a | [0324]                 move.v  d:%Base v:#h0A                              ; Set the base to 10
+0x000043b2: 0x80000008 | [0325]                 brch.a  a:.nextmod                                  ; Move on
+0x000043b3: 0x18e0c024 | [0327] :.chkdollar     cmpr.v  a:%Temp v:#c'$'                             ; Is it hex?
+0x000043b4: 0x82000003 | [0328]                 brch.a  c:%NEQ a:.chkpercent                        ; If not, loop down
+0x000043b5: 0x2a000010 | [0329]                 move.v  d:%Base v:#h10                              ; Set the base to 16
+0x000043b6: 0x80000004 | [0330]                 brch.a  a:.nextmod                                  ; Move on
+0x000043b7: 0x18e0c025 | [0332] :.chkpercent    cmpr.v  a:%Temp v:#c'%'                             ; Is it binary?
+0x000043b8: 0x82000006 | [0333]                 brch.a  c:%NEQ a:.itsanumber                        ; If not, loop down
+0x000043b9: 0x2a000002 | [0334]                 move.v  d:%Base v:#h02                              ; Set the base to 2
+0x000043ba: 0x18088001 | [0336] :.nextmod       addr.v  d:%StrAddr a:%StrAddr v:#h01
+0x000043bb: 0x18199001 | [0337]                 subr.v  d:%StrLen a:%StrLen v:#h01                  ; Next character please
+0x000043bc: 0x18e09000 | [0339]                 cmpr.v  a:%StrLen v:#h00                            ; Are we out of characters?
+0x000043bd: 0x820fffe6 | [0340]                 brch.a  c:%NEQ a:.modloop                           ; If not, keep looking
+0x000043be: 0x2f000000 | [0342] :.itsanumber    move.v  d:%Value v:#h00                             ; Clear the accumulator
+0x000043bf: 0x48c00000 | [0344] :.numberloop    load.o  d:%Temp r:%StrAddr                          ; Load the character
+0x000043c0: 0x18e0c000 | [0346]                 cmpr.v  a:%Temp v:#h00                              ; Is it empty?
+0x000043c1: 0x82000002 | [0347]                 brch.a  c:%NEQ a:.notfinished                       ; If not, loop down
+0x000043c2: 0x80000017 | [0348]                 brch.a  a:.finish                                   ; Return the number since we're done here
+0x000043c3: 0x183cc020 | [0350] :.notfinished   orbt.v  d:%Temp a:%Temp v:#h20
+0x000043c4: 0x181cc030 | [0351]                 subr.v  d:%Temp a:%Temp v:#h30                      ; Force lowercase and shrink down to number range
+0x000043c5: 0x18e0c00a | [0353]                 cmpr.v  a:%Temp v:#h0A                              ; Is the digit part of the alphabet?
+0x000043c6: 0x8e000002 | [0354]                 brch.a  c:%LST a:.checkrange                        ; If not, skip this next bit
+0x000043c7: 0x181cc027 | [0355]                 subr.v  d:%Temp a:%Temp v:#h27                      ; Drop the ASCII lowercase alphabet range (starting at 0x61) to 0xA 
+0x000043c8: 0x10e0ca00 | [0357] :.checkrange    cmpr.r  a:%Temp b:%Base                             ; Is the number outside of the acceptable range for the base?
+0x000043c9: 0x8b000016 | [0358]                 brch.a  c:%GET a:.numberfail                        ; If so, abort
+0x000043ca: 0x61a00000 | [0360]                 push.r  s:%Base                                     ; Make a backup of the base
+0x000043cb: 0x61900000 | [0361]                 push.r  s:%StrLen                                   ; Need another register
+0x000043cc: 0x29000000 | [0362]                 move.v  d:%StrLen v:#h00                            ; (Our temporary accumulator)
+0x000043cd: 0x10099f00 | [0364] :.multiply      addr.r  d:%StrLen a:%StrLen b:%Value                ; Add another value
+0x000043ce: 0x181aa001 | [0365]                 subr.v  d:%Base a:%Base v:#h01                      ; This method doesn't work for base == 0, but that doesn't exist so whatever
+0x000043cf: 0x18e0a000 | [0366]                 cmpr.v  a:%Base v:#h00                              ; Done?
+0x000043d0: 0x820ffffd | [0367]                 brch.a  c:%NEQ a:.multiply                          ; If not, better keep going
+0x000043d1: 0x08f90000 | [0369]                 move.r  d:%Value s:%StrLen                          ; Save the multiplied value
+0x000043d2: 0x41900000 | [0370]                 pops.r  d:%StrLen
+0x000043d3: 0x41a00000 | [0371]                 pops.r  d:%Base                                     ; And restore working registers
+0x000043d4: 0x100ffc00 | [0373]                 addr.r  d:%Value a:%Value b:%Temp                   ; Add the last place
+0x000043d5: 0x18088001 | [0375] :.nextdigit     addr.v  d:%StrAddr a:%StrAddr v:#h01
+0x000043d6: 0x18199001 | [0376]                 subr.v  d:%StrLen a:%StrLen v:#h01                  ; Next character please
+0x000043d7: 0x18e09000 | [0378]                 cmpr.v  a:%StrLen v:#h00                            ; Are we out of characters?
+0x000043d8: 0x820fffe7 | [0379]                 brch.a  c:%NEQ a:.numberloop                        ; If not, keep looking
+0x000043d9: 0x18e0e001 | [0381] :.finish        cmpr.v  a:%Status v:#h01                            ; Is the number negative?
+0x000043da: 0x82000003 | [0382]                 brch.a  c:%NEQ a:.finishstat                        ; If not, skip the next thing
+0x000043db: 0x105ff000 | [0383]                 notb.r  d:%Value a:%Value
+0x000043dc: 0x180ff001 | [0384]                 addr.v  d:%Value a:%Value v:#h01                    ; Make it negative
+0x000043dd: 0x2e000000 | [0385] :.finishstat    move.v  d:%Status v:#h00                            ; Clear the status register
+0x000043de: 0x80000002 | [0386]                 brch.a  a:.cleanup                                  ; And exit
+0x000043df: 0x2e0000ff | [0388] :.numberfail    move.v  d:%Status v:#hFF                            ; A positive status indicates that the string isn't a number
+0x000043e0: 0x41a00000 | [0390] :.cleanup       pops.r  d:%Base
+0x000043e1: 0x41900000 | [0391]                 pops.r  d:%StrLen
+0x000043e2: 0x41800000 | [0392]                 pops.r  d:%StrAddr
+0x000043e3: 0xf0000000 | [0393]                 rtrn.s                                              ; Restore and exit
+0x000043e4: 0x61800000 | [0405] :sub_numoutput  push.r  s:%Value
+0x000043e5: 0x61a00000 | [0406]                 push.r  s:%Base
+0x000043e6: 0x18111003 | [0407]                 subr.v  d:%SP a:%SP v:#h03
+0x000043e7: 0x41800000 | [0408]                 pops.r  d:%Value                                 
+0x000043e8: 0x18011004 | [0409]                 addr.v  d:%SP a:%SP v:#h04                          ; Grab parameters from the stack
+0x000043e9: 0x2a00000a | [0411]                 move.v  d:%Base v:#h0A                              ; Just decimal for right now
+0x000043ea: 0x2f000000 | [0412]                 move.v  d:%Records v:#h00                           ; Print no characters yet
+0x000043eb: 0x18e08000 | [0414]                 cmpr.v  a:%Value v:#h00                             ; Is the value negative?
+0x000043ec: 0x8b000006 | [0415]                 brch.a  c:%GET a:.calcloop                          ; If not, keep on goin
+0x000043ed: 0x10588000 | [0417]                 notb.r  d:%Value a:%Value
+0x000043ee: 0x18088001 | [0418]                 addr.v  d:%Value a:%Value v:#h01                    ; Make positive
+0x000043ef: 0x2f00002d | [0420]                 move.v  d:%Records v:#c'-'
+0x000043f0: 0x61f00000 | [0421]                 push.r  s:%Records
+0x000043f1: 0x2f000001 | [0422]                 move.v  d:%Records v:#h01                           ; Quick and dirty negative hack
+0x000043f2: 0x2e000000 | [0424] :.calcloop      move.v  d:%Divided v:#h00                           ; Clear divided count
+0x000043f3: 0x10e08a00 | [0426] :.divideloop    cmpr.r  a:%Value b:%Base                            ; Is there a remainder?
+0x000043f4: 0x8e000004 | [0427]                 brch.a  c:%LST a:.exitdivide                        ; Not yet? Then keep it up
+0x000043f5: 0x180ee001 | [0428]                 addr.v  d:%Divided a:%Divided v:#h01                ; Record the new number
+0x000043f6: 0x10188a00 | [0429]                 subr.r  d:%Value a:%Value b:%Base                   ; Subtract out a base
+0x000043f7: 0x800ffffc | [0430]                 brch.a  a:.divideloop                               ; Loop it
+0x000043f8: 0x61800000 | [0432] :.exitdivide    push.r  s:%Value                                    ; Save the digit
+0x000043f9: 0x088e0000 | [0433]                 move.r  d:%Value s:%Divided                         ; Keep the transfer
+0x000043fa: 0x180ff001 | [0434]                 addr.v  d:%Records a:%Records v:#h01                ; And note how many digits we kept
+0x000043fb: 0x18e08000 | [0436]                 cmpr.v  a:%Value v:#h00                             ; Are there more digits to copy?
+0x000043fc: 0x820ffff6 | [0437]                 brch.a  c:%NEQ a:.calcloop                          ; If so, keep chuggin
+0x000043fd: 0x41800000 | [0439] :.printloop     pops.r  d:%Value                                    ; Get the digit back
+0x000043fe: 0x18088030 | [0440]                 addr.v  d:%Value a:%Value v:#h30                    ; Push it up to ASCII digit range
+0x000043ff: 0x18e0803a | [0442]                 cmpr.v  a:%Value v:#h3A                             ; Does this need to be a letter?
+0x00004400: 0x8e000002 | [0443]                 brch.a  c:%LST a:.display                           ; If not, don't make it a letter
+0x00004401: 0x18088007 | [0444]                 addr.v  d:%Value a:%Value v:#h07                    ; Push it a little higher to ASCII uppercase range
+0x00004402: 0x61f00000 | [0446] :.display       push.r  s:%Records
+0x00004403: 0x61800000 | [0447]                 push.r  s:%Value
+0x00004404: 0xd00ffc49 | [0448]                 call.s  a:ser_send
+0x00004405: 0x41800000 | [0449]                 pops.r  d:%Value                                    
+0x00004406: 0x41f00000 | [0450]                 pops.r  d:%Records                                  ; Print the character, keeping in mind that Records will be zapped
+0x00004407: 0x181ff001 | [0452]                 subr.v  d:%Records a:%Records v:#h01
+0x00004408: 0x18e0f000 | [0453]                 cmpr.v  a:%Records v:#h00                           ; We done?
+0x00004409: 0x820ffff4 | [0454]                 brch.a  c:%NEQ a:.printloop                         ; If not, keep going
+0x0000440a: 0x28000020 | [0456]                 move.v  d:%Value v:#h20
+0x0000440b: 0x61800000 | [0457]                 push.r  s:%Value
+0x0000440c: 0xd00ffc41 | [0458]                 call.s  a:ser_send
+0x0000440d: 0x41800000 | [0459]                 pops.r  d:%Value                                    ; Print the extra space
+0x0000440e: 0x41a00000 | [0461] :.cleanup       pops.r  d:%Base
+0x0000440f: 0x41800000 | [0462]                 pops.r  d:%Value
+0x00004410: 0xf0000000 | [0463]                 rtrn.s                                              ; Restore and exit
+0x00004411: 0x18111001 | [0476] :sub_callerror  subr.v  d:%SP a:%SP v:#h01
+0x00004412: 0x41a00000 | [0477]                 pops.r  d:%TypeError
+0x00004413: 0x18011002 | [0478]                 addr.v  d:%SP a:%SP v:#h02                          ; Grab parameters from the stack. No need to save them
+0x00004414: 0x2c00000a | [0480]                 move.v  d:%Temp v:#h0A  
+0x00004415: 0x61c00000 | [0481]                 push.r  s:%Temp
+0x00004416: 0xd00ffc37 | [0482]                 call.s  a:ser_send
+0x00004417: 0x41c00000 | [0483]                 pops.r  d:%Temp                                     ; Print '\n'
+0x00004418: 0x2c00003a | [0487]                 move.v  d:%Temp v:#h3A
+0x00004419: 0x61c00000 | [0488]                 push.r  s:%Temp
+0x0000441a: 0xd00ffc33 | [0489]                 call.s  a:ser_send
+0x0000441b: 0x41c00000 | [0490]                 pops.r  d:%Temp                                     ; Print ':'
+0x0000441c: 0x2c000020 | [0492]                 move.v  d:%Temp v:#h20
+0x0000441d: 0x61c00000 | [0493]                 push.r  s:%Temp
+0x0000441e: 0xd00ffc2f | [0494]                 call.s  a:ser_send
+0x0000441f: 0x41c00000 | [0495]                 pops.r  d:%Temp                                     ; Print ' '
+0x00004420: 0x61a00000 | [0497]                 push.r  s:%TypeError
+0x00004421: 0xd00fffc3 | [0498]                 call.s  a:sub_numoutput
+0x00004422: 0x41a00000 | [0499]                 pops.r  d:%TypeError                                ; Print the error number
+0x00004423: 0x2c00003a | [0501]                 move.v  d:%Temp v:#h3A
+0x00004424: 0x61c00000 | [0502]                 push.r  s:%Temp
+0x00004425: 0xd00ffc28 | [0503]                 call.s  a:ser_send
+0x00004426: 0x41c00000 | [0504]                 pops.r  d:%Temp                                     ; Print ':'
+0x00004427: 0x2c000020 | [0506]                 move.v  d:%Temp v:#h20
+0x00004428: 0x61c00000 | [0507]                 push.r  s:%Temp
+0x00004429: 0xd00ffc24 | [0508]                 call.s  a:ser_send
+0x0000442a: 0x41c00000 | [0509]                 pops.r  d:%Temp                                     ; Print ' '
+0x0000442b: 0x2c004333 | [0511]                 move.v  d:%Temp v:ifirm_errstr.lookup
+0x0000442c: 0x100cca00 | [0512]                 addr.r  d:%Temp a:%Temp b:%TypeError
+0x0000442d: 0x4cc00000 | [0513]                 load.o  d:%Temp  r:%Temp                            ; Grab address of string
+0x0000442e: 0x61c00000 | [0514]                 push.r  s:%Temp
+0x0000442f: 0xd00ffd09 | [0515]                 call.s  a:str_puts
+0x00004430: 0x41c00000 | [0516]                 pops.r  d:%Temp                                     ; And print the error
+0x00004431: 0x2c00000a | [0518]                 move.v  d:%Temp v:#h0A  
+0x00004432: 0x61c00000 | [0519]                 push.r  s:%Temp
+0x00004433: 0xd00ffc1a | [0520]                 call.s  a:ser_send
+0x00004434: 0x41c00000 | [0521]                 pops.r  d:%Temp                                     ; Print '\n'
+0x00004435: 0x2c004312 | [0525]                 move.v  d:%Temp v:ifirm_errstr.setleft
+0x00004436: 0x61c00000 | [0526]                 push.r  s:%Temp
+0x00004437: 0xd00ffd01 | [0527]                 call.s  a:str_puts
+0x00004438: 0x41c00000 | [0528]                 pops.r  d:%Temp                                     ; Print ">>>>"
+0x00004439: 0x43801801 | [0530]                 load.o  d:%WordAddr r:%GL o:#hMemLastAddr
+0x0000443a: 0x43901802 | [0531]                 load.o  d:%WordLen r:%GL o:#hMemLastLen             ; Get the name of the word
+0x0000443b: 0x48c00000 | [0533] :.nameloop      load.o  d:%Temp r:%WordAddr 
+0x0000443c: 0x61c00000 | [0534]                 push.r  s:%Temp
+0x0000443d: 0xd00ffc10 | [0535]                 call.s  a:ser_send
+0x0000443e: 0x41c00000 | [0536]                 pops.r  d:%Temp
+0x0000443f: 0x18088001 | [0537]                 addr.v  d:%WordAddr a:%WordAddr v:#h01
+0x00004440: 0x18199001 | [0538]                 subr.v  d:%WordLen a:%WordLen v:#h01
+0x00004441: 0x18e09000 | [0539]                 cmpr.v  a:%WordLen v:#h00
+0x00004442: 0x820ffff9 | [0540]                 brch.a  c:%NEQ a:.nameloop                          ; Print the bad word
+0x00004443: 0x2c004314 | [0542]                 move.v  d:%Temp v:ifirm_errstr.setright
+0x00004444: 0x61c00000 | [0543]                 push.r  s:%Temp
+0x00004445: 0xd00ffcf3 | [0544]                 call.s  a:str_puts
+0x00004446: 0x41c00000 | [0545]                 pops.r  d:%Temp                                     ; Print "<<<<\n"
+0x00004447: 0x2c004316 | [0549]                 move.v  d:%Temp v:ifirm_errstr.setstack
+0x00004448: 0x61c00000 | [0550]                 push.r  s:%Temp
+0x00004449: 0xd00ffcef | [0551]                 call.s  a:str_puts
+0x0000444a: 0x41c00000 | [0552]                 pops.r  d:%Temp                                     ; Print stack layout message
+0x0000444b: 0x181c4003 | [0554]                 subr.v  d:%Temp a:%DSP v:#h03
+0x0000444c: 0x4cc00000 | [0555]                 load.o  d:%Temp r:%Temp
+0x0000444d: 0x61c00000 | [0556]                 push.r  s:%Temp
+0x0000444e: 0xd00fff96 | [0557]                 call.s  a:sub_numoutput
+0x0000444f: 0x41c00000 | [0558]                 pops.r  d:%Temp                                     ; DSP - 2
+0x00004450: 0x181c4002 | [0560]                 subr.v  d:%Temp a:%DSP v:#h02
+0x00004451: 0x4cc00000 | [0561]                 load.o  d:%Temp r:%Temp
+0x00004452: 0x61c00000 | [0562]                 push.r  s:%Temp
+0x00004453: 0xd00fff91 | [0563]                 call.s  a:sub_numoutput
+0x00004454: 0x41c00000 | [0564]                 pops.r  d:%Temp                                     ; DSP - 1
+0x00004455: 0x181c4001 | [0566]                 subr.v  d:%Temp a:%DSP v:#h01
+0x00004456: 0x4cc00000 | [0567]                 load.o  d:%Temp r:%Temp
+0x00004457: 0x61c00000 | [0568]                 push.r  s:%Temp
+0x00004458: 0xd00fff8c | [0569]                 call.s  a:sub_numoutput
+0x00004459: 0x41c00000 | [0570]                 pops.r  d:%Temp                                     ; DSP
+0x0000445a: 0x2c00000a | [0572]                 move.v  d:%Temp v:#h0A  
+0x0000445b: 0x61c00000 | [0573]                 push.r  s:%Temp
+0x0000445c: 0xd00ffbf1 | [0574]                 call.s  a:ser_send
+0x0000445d: 0x41c00000 | [0575]                 pops.r  d:%Temp                                     ; Print '\n'
+0x0000445e: 0x80000016 | [0577]                 brch.a  a:errreentry                                ; Branch back to the interpreter
+0x0000445f: 0x23000000 | [0587] :main           move.v  d:%GL v:#h00                                ; The global register is mostly used for branches
+0x00004460: 0x21001700 | [0588]                 move.v  d:%SP v:#h1700                              ; Set up the call stack
+0x00004461: 0x25001200 | [0589]                 move.v  d:%RSP v:#h1200                             ; Set up the return stack
+0x00004462: 0x24001000 | [0590]                 move.v  d:%DSP v:#h1000                             ; Set up the data stack
+0x00004463: 0x28001400 | [0591]                 move.v  d:%InptAddr v:#h1400                        ; Set up the command buffer
+0x00004464: 0x29000000 | [0592]                 move.v  d:%InptOffs v:#00                           ; Set up the command buffer offset
+0x00004465: 0x2c00000a | [0594]                 move.v  d:%Temp v:#h0A
+0x00004466: 0x63c00000 | [0595]                 stor.o  s:%Temp r:%GL o:#hMemBase                   ; Store the default numerical base - decimal
+0x00004467: 0xd00ffb9a | [0597]                 call.s  a:ioc_init
+0x00004468: 0x2c007fff | [0598]                 move.v  d:%Temp v:#h7FFF
+0x00004469: 0x61c00000 | [0599]                 push.r  s:%Temp
+0x0000446a: 0x2c000000 | [0600]                 move.v  d:%Temp v:#h00
+0x0000446b: 0x61c00000 | [0601]                 push.r  s:%Temp
+0x0000446c: 0xd00ffba5 | [0602]                 call.s  a:ioc_send
+0x0000446d: 0x41c00000 | [0603]                 pops.r  d:%Temp
+0x0000446e: 0x41c00000 | [0604]                 pops.r  d:%Temp                                     ; Reset the I/O controller
+0x0000446f: 0x2c004304 | [0606] :.welcome       move.v  d:%Temp v:ifirm_str.welcome
+0x00004470: 0x61c00000 | [0607]                 push.r  s:%Temp
+0x00004471: 0xd00ffcc7 | [0608]                 call.s  a:str_puts
+0x00004472: 0x41c00000 | [0609]                 pops.r  d:%Temp                                     ; Print the welcome message
+0x00004473: 0x80000007 | [0611]                 brch.a  a:cmdentry                                  ; Jump down to the command handler
+0x00004474: 0x21001700 | [0619] :errreentry     move.v  d:%SP v:#h1700                              ; Set up the call stack
+0x00004475: 0x28001400 | [0621] :cmdreentry     move.v  d:%InptAddr v:#h1400                        ; Reset the input pointer
+0x00004476: 0x2c00430d | [0623]                 move.v  d:%Temp v:ifirm_str.okprompt
+0x00004477: 0x61c00000 | [0624]                 push.r  s:%Temp
+0x00004478: 0xd00ffcc0 | [0625]                 call.s  a:str_puts
+0x00004479: 0x41c00000 | [0626]                 pops.r  d:%Temp                                     ; Print the "ok" prompt
+0x0000447a: 0x29000000 | [0628] :cmdentry       move.v  d:%InptOffs v:#00                           ; Set up the command buffer offset
+0x0000447b: 0xd00ffbf1 | [0630] :.cmdloop       call.s  a:ser_srcv                                  ; Get a character from the terminal
+0x0000447c: 0x18e0f008 | [0632]                 cmpr.v  a:%Output v:#h08                            ; Is character a backspace?
+0x0000447d: 0x82000007 | [0633]                 brch.a  c:%NEQ a:.notback                           ; If not, loop down a few
+0x0000447e: 0x18099001 | [0635]                 addr.v  d:%InptOffs a:%InptOffs v:#h01              ; Decrement the buffer offset
+0x0000447f: 0x2f000008 | [0637]                 move.v  d:%Output v:#h08    
+0x00004480: 0x61f00000 | [0638]                 push.r  s:%Output
+0x00004481: 0xd00ffbcc | [0639]                 call.s  a:ser_send
+0x00004482: 0x41f00000 | [0640]                 pops.r  d:%Output                                   ; Echo a backspace
+0x00004483: 0x800ffff8 | [0642]                 brch.a  a:.cmdloop                                  ; And loop back around
+0x00004484: 0x18e0f00d | [0644] :.notback       cmpr.v  a:%Output v:#h0D                            ; Is character an enter?
+0x00004485: 0x82000008 | [0645]                 brch.a  c:%NEQ a:.notenter                          ; If not, loop down a few
+0x00004486: 0x100c8900 | [0647]                 addr.r  d:%Temp a:%InptAddr b:%InptOffs
+0x00004487: 0x6c300000 | [0648]                 stor.o  s:%GL r:%Temp                               ; Store a zero
+0x00004488: 0x2c000020 | [0650]                 move.v  d:%Temp v:#h20
+0x00004489: 0x61c00000 | [0651]                 push.r  s:%Temp
+0x0000448a: 0xd00ffbc3 | [0652]                 call.s  a:ser_send
+0x0000448b: 0x41c00000 | [0653]                 pops.r  d:%Temp                                     ; Print the "I'm processing" space
+0x0000448c: 0x8000000b | [0655]                 brch.a  a:intpentry                                 ; And jump to the interpreter
+0x0000448d: 0x18e09310 | [0657] :.notenter      cmpr.v  a:%InptOffs v:#h10 s:#h03                   ; Is the command buffer full?
+0x0000448e: 0x8c000002 | [0658]                 brch.a  c:%LET a:.notfull                           ; If not, loop down a few
+0x0000448f: 0x800fffec | [0660]                 brch.a  a:.cmdloop                                  ; Loop back around, since we can't do anything anymore
+0x00004490: 0x100c8900 | [0662] :.notfull       addr.r  d:%Temp a:%InptAddr b:%InptOffs
+0x00004491: 0x6cf00000 | [0663]                 stor.o  s:%Output r:%Temp                           ; Store the character
+0x00004492: 0x18099001 | [0664]                 addr.v  d:%InptOffs a:%InptOffs v:#h01              ; Increment the buffer offset
+0x00004493: 0x61f00000 | [0666]                 push.r  s:%Output
+0x00004494: 0xd00ffbb9 | [0667]                 call.s  a:ser_send
+0x00004495: 0x41f00000 | [0668]                 pops.r  d:%Output                                   ; Echo the character
+0x00004496: 0x800fffe5 | [0670]                 brch.a  a:.cmdloop                                  ; And loop back around
+0x00004497: 0x28001400 | [0678] :intpentry      move.v  d:%InptAddr v:#h1400                        ; Reset the input pointer
+0x00004498: 0x2a006000 | [0679]                 move.v  d:%DictAddr v:#h6000                        ; Reset the dictionary pointer
+0x00004499: 0x61800000 | [0681] :.runloop       push.r  s:%InptAddr
+0x0000449a: 0x2c000020 | [0682]                 move.v  d:%Temp v:#h20
+0x0000449b: 0x61c00000 | [0683]                 push.r  s:%Temp
+0x0000449c: 0xd00ffeb3 | [0684]                 call.s  a:sub_tokenize                              
+0x0000449d: 0x41c00000 | [0685]                 pops.r  d:%Temp                                     
+0x0000449e: 0x41c00000 | [0686]                 pops.r  d:%Temp                                     ; Get a space-delimited string from the input     
+0x0000449f: 0x18e0e000 | [0688]                 cmpr.v  a:%AuxOutput v:#h00                         ; Is the string's length zero?
+0x000044a0: 0x81000035 | [0689]                 brch.a  c:%EQL a:.runfinish                         ; If so, there are no more words to execute
+0x000044a1: 0x61f00000 | [0691]                 push.r  s:%Output
+0x000044a2: 0x2c004310 | [0692]                 move.v  d:%Temp v:ifirm_str.wordhit
+0x000044a3: 0x61c00000 | [0693]                 push.r  s:%Temp
+0x000044a4: 0xd00ffc94 | [0694]                 call.s  a:str_puts
+0x000044a5: 0x41c00000 | [0695]                 pops.r  d:%Temp                                     ; Print the hit message
+0x000044a6: 0x41f00000 | [0696]                 pops.r  d:%Output                                   ; Keep in mind that other routines generally clobber Zz
+0x000044a7: 0x63e01802 | [0698]                 stor.o  s:%AuxOutput r:%GL o:#hMemLastLen
+0x000044a8: 0x63f01801 | [0699]                 stor.o  s:%Output r:%GL o:#hMemLastAddr             ; Store the last word called
+0x000044a9: 0x61e00000 | [0701]                 push.r  s:%AuxOutput
+0x000044aa: 0x61f00000 | [0702]                 push.r  s:%Output                                   ; Save these so we know where to go next
+0x000044ab: 0x61f00000 | [0704]                 push.r  s:%Output   
+0x000044ac: 0x61e00000 | [0705]                 push.r  s:%AuxOutput
+0x000044ad: 0xd00ffebd | [0706]                 call.s  a:sub_dictlookup
+0x000044ae: 0x41c00000 | [0707]                 pops.r  d:%Temp
+0x000044af: 0x41c00000 | [0708]                 pops.r  d:%Temp                                     ; See if there's a dictionary entry matching the word
+0x000044b0: 0x18e0f000 | [0710]                 cmpr.v  a:%Output v:#h00                            ; Is the entry's address zero?
+0x000044b1: 0x8100000f | [0711]                 brch.a  c:%EQL a:.notfound                          ; If so, the word is invalid
+0x000044b2: 0x180ee002 | [0713]                 addr.v  d:%AuxOutput a:%AuxOutput v:#h02
+0x000044b3: 0x100ffe00 | [0714]                 addr.r  d:%Output a:%Output b:%AuxOutput            ; Calculate the code address
+0x000044b4: 0x4ff00000 | [0715]                 load.o  d:%Output r:%Output                         ; Load it
+0x000044b5: 0x61f00000 | [0717]                 push.r  s:%Output
+0x000044b6: 0x2c00430e | [0718]                 move.v  d:%Temp v:ifirm_str.tmpmatch
+0x000044b7: 0x61c00000 | [0719]                 push.r  s:%Temp
+0x000044b8: 0xd00ffc80 | [0720]                 call.s  a:str_puts
+0x000044b9: 0x41c00000 | [0721]                 pops.r  d:%Temp                                     ; Print the error message
+0x000044ba: 0x41f00000 | [0722]                 pops.r  d:%Output
+0x000044bb: 0xd0f00000 | [0724]                 brch.o  r:%Output l:%SVSK                           ; And run the word
+0x000044bc: 0x41f00000 | [0726]                 pops.r  d:%Output
+0x000044bd: 0x41e00000 | [0727]                 pops.r  d:%AuxOutput                                ; Restore the buffer pointer and length
+0x000044be: 0x1008fe00 | [0729]                 addr.r  d:%InptAddr a:%Output b:%AuxOutput          ; Move the buffer pointer to the next word
+0x000044bf: 0x800fffda | [0730]                 brch.a  a:.runloop                                  ; And loop back up to run another word
+0x000044c0: 0x41f00000 | [0732] :.notfound      pops.r  d:%Output
+0x000044c1: 0x41e00000 | [0733]                 pops.r  d:%AuxOutput                                ; Clear the stack
+0x000044c2: 0x61e00000 | [0735]                 push.r  s:%AuxOutput
+0x000044c3: 0x61f00000 | [0736]                 push.r  s:%Output                                   ; Save these so we know where to go next
+0x000044c4: 0x61f00000 | [0738]                 push.r  s:%Output
+0x000044c5: 0x61e00000 | [0739]                 push.r  s:%AuxOutput                                
+0x000044c6: 0xd00ffed4 | [0740]                 call.s  a:sub_numconvert
+0x000044c7: 0x41c00000 | [0741]                 pops.r  d:%Temp
+0x000044c8: 0x41c00000 | [0742]                 pops.r  d:%Temp                                     ; See if the result was a number
+0x000044c9: 0x18e0e000 | [0744]                 cmpr.v  a:%AuxOutput v:#h00                         ; Was it a number
+0x000044ca: 0x82000007 | [0745]                 brch.a  c:%NEQ a:.notnumber                         ; If not, abort
+0x000044cb: 0x08ef0000 | [0747]                 move.r  d:%AuxOutput s:%Output
+0x000044cc: 0xd00ffe6b | [0748]                 call.s  a:sub_pushds                                ; Onto the stack it goes
+0x000044cd: 0x41f00000 | [0750]                 pops.r  d:%Output
+0x000044ce: 0x41e00000 | [0751]                 pops.r  d:%AuxOutput                                ; Restore the buffer pointer and length
+0x000044cf: 0x1008fe00 | [0753]                 addr.r  d:%InptAddr a:%Output b:%AuxOutput          ; Move the buffer pointer to the next word
+0x000044d0: 0x800fffc9 | [0754]                 brch.a  a:.runloop
+0x000044d1: 0x2c000003 | [0756] :.notnumber     move.v  d:%Temp v:#h03
+0x000044d2: 0x61c00000 | [0757]                 push.r  s:%Temp
+0x000044d3: 0xd00fff3e | [0758]                 call.s  a:sub_callerror
+0x000044d4: 0x41c00000 | [0759]                 pops.r  d:%Temp                                     ; This pop will never be called but whatever
+0x000044d5: 0x800fffa0 | [0761] :.runfinish     brch.a  a:cmdreentry                                ; Not sure if something else needs to be done here, so I'll make it separate
+0x00006000: 0x40700000 | [0774] :dict_restart   !data   h40700000 
+0x00006001: 0x00000072 |
+            0x00000065 |
+            0x00000073 |
+            0x00000074 |
+            0x00000061 |
+            0x00000072 |
+            0x00000074 | [0775]                 !wstr   "restart"
+0x00006008: 0x0000600a | [0776]                 !data   $dict_period 
+0x00006009: 0x00004000 | [0777]                 !data   $entry                                      ; IT'S A HACK AGAIN
+0x0000600a: 0x40100000 | [0780] :dict_period    !data   h40100000
+0x0000600b: 0x0000002e | [0781]                 !wstr   "."
+0x0000600c: 0x00006013 | [0782]                 !data   $dict_add
+0x0000600d: 0x0000600e | [0783]                 !data   $dictc_period
+0x0000600e: 0xd00fe32c | [0785] :dictc_period   call.s  a:sub_popsds                                ; Retrieve the number
+0x0000600f: 0x61f00000 | [0786]                 push.r  s:%Output
+0x00006010: 0xd00fe3d4 | [0787]                 call.s  a:sub_numoutput
+0x00006011: 0x41f00000 | [0788]                 pops.r  d:%Output                                   ; Print it
+0x00006012: 0xf0000000 | [0789]                 rtrn.s                                              ; And return
+0x00006013: 0x40100000 | [0792] :dict_add       !data   h40100000
+0x00006014: 0x0000002b | [0793]                 !wstr   "+"
+0x00006015: 0x0000601e | [0794]                 !data   $dict_subtract
+0x00006016: 0x00006017 | [0795]                 !data   $dictc_add
+0x00006017: 0xd00fe323 | [0797] :dictc_add      call.s  a:sub_popsds                              
+0x00006018: 0x086f0000 | [0798]                 move.r  d:%StackWorkA s:%Output
+0x00006019: 0xd00fe321 | [0799]                 call.s  a:sub_popsds                                
+0x0000601a: 0x087f0000 | [0800]                 move.r  d:%StackWorkB s:%Output                     ; Get the terms
+0x0000601b: 0x100e7600 | [0802]                 addr.r  d:%AuxOutput a:%StackWorkB b:%StackWorkA    ; Add em
+0x0000601c: 0xd00fe31b | [0803]                 call.s  a:sub_pushds                                ; And put back on the data stack
+0x0000601d: 0xf0000000 | [0805]                 rtrn.s                                              ; And return
+0x0000601e: 0x40100000 | [0808] :dict_subtract  !data   h40100000
+0x0000601f: 0x0000002d | [0809]                 !wstr   "-"
+0x00006020: 0x00006029 | [0810]                 !data   $dict_nullentry
+0x00006021: 0x00006022 | [0811]                 !data   $dictc_subtract
+0x00006022: 0xd00fe318 | [0813] :dictc_subtract call.s  a:sub_popsds                              
+0x00006023: 0x086f0000 | [0814]                 move.r  d:%StackWorkA s:%Output
+0x00006024: 0xd00fe316 | [0815]                 call.s  a:sub_popsds                                
+0x00006025: 0x087f0000 | [0816]                 move.r  d:%StackWorkB s:%Output                     ; Get the terms
+0x00006026: 0x101e7600 | [0818]                 subr.r  d:%AuxOutput a:%StackWorkB b:%StackWorkA    ; Subtract em
+0x00006027: 0xd00fe310 | [0819]                 call.s  a:sub_pushds                                ; And put back on the data stack
+0x00006028: 0xf0000000 | [0821]                 rtrn.s                                              ; And return
+0x00006029: 0x00000000 | [0824] :dict_nullentry !data h00000000

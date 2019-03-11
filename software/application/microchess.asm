@@ -910,8 +910,8 @@ OPNING  	.byte 	$99, $25, $0B, $25, $01, $00, $33, $25
 ; end of file
 ;
 
-!include    "../../rom/bios_bus.asm"
-!include    "../../rom/bios_uart.asm"
-!include    "../../rom/bios_string.asm"
-!include    "../../rom/bios_video.asm"
-!include    "../../rom/bios_debug.asm"
+!include    "../rom/bios_bus.asm"
+!include    "../rom/bios_uart.asm"
+!include    "../rom/bios_string.asm"
+!include    "../rom/bios_video.asm"
+!include    "../rom/bios_debug.asm"

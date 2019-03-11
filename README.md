@@ -22,7 +22,11 @@ Go fetch some more repos:
 
 [flail](http://github.com/JCLemme/flail) is the emulator.
 
+[snag](http://github.com/JCLemme/snag) is the development board it runs on.
+
 The assembler is reasonably complete and bug-free, and there are plenty of commented examples of epRISC programs in the `software` directory (although no formal spec sheet yet). The emulator is still being developed, but will work for testing most programs that don't rely on any hardware but the serial port.
+
+The development board is working, but I wouldn't recommend trying to build your own just yet. There's a fair number of mistakes and missteps that need correcting first.
 
 For the time being, you might want to clone [this repository](http://github.com/jclemme/eprisc-open-computer) instead. I've only just started moving things to separate repositories and there are bound to be issues with uncorrected file paths.
 

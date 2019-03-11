@@ -97,7 +97,7 @@
                 losr.v  d:REG_TEMP a:REG_TEMP v:#h10
                 pops.r  d:REG_STRA
                 orbt.r  d:REG_STRA a:REG_STRA b:REG_TEMP            ; REASSEMBLE
-                endx.r  d:REG_STRA a:REG_STRA                       ; Value is stored little-endian, so convert that into something we can use
+ ;               endx.r  d:REG_STRA a:REG_STRA                       ; Value is stored little-endian, so convert that into something we can use
                 
                 move.v  d:%Yw v:dsk_strloadn                        
                 push.r  s:%Yw
@@ -123,7 +123,7 @@
                 losr.v  d:REG_TEMP a:REG_TEMP v:#h10
                 pops.r  d:REG_STRA
                 orbt.r  d:REG_STRA a:REG_STRA b:REG_TEMP            ; REASSEMBLE
-                endx.r  d:REG_STRA a:REG_STRA                       ; Value is stored little-endian, so convert that into something we can use
+;                endx.r  d:REG_STRA a:REG_STRA                       ; Value is stored little-endian, so convert that into something we can use
                 
                 move.v  d:%Yw v:dsk_strlengn                        
                 push.r  s:%Yw
@@ -161,7 +161,7 @@
                 
                 addr.v  d:REG_DADR a:REG_DADR v:#h0E                ; Look for the magic number
                 load.o  d:REG_STRA r:REG_DADR
-                endx.r  d:REG_STRA a:REG_STRA
+;                endx.r  d:REG_STRA a:REG_STRA
                 move.v  d:REG_TEMP v:#hFFFF 
                 andb.r  d:REG_STRA a:REG_STRA b:REG_TEMP
                 move.v  d:REG_TEMP v:#hEF53
@@ -198,6 +198,32 @@
                 subr.v  d:REG_DADR a:REG_DADR v:#h1E               
                 addr.v  d:REG_DADR a:REG_DADR v:#h1E                ; Volume label
                 
+                
+                
+                
+                
+;                Read block size
+;                Read blocks per group
+;                Read inodes per group
+;                Read starting block of first group
+                
+                
+                
+                
+                
+                
+;                Find inode's block group
+;                    Block_group = (inode - 1) / inodes_per_group
+;                Read block group descriptor for inode's block group
+;                Extract location of block group's inode table
+;                Find index of inode in inode table
+;                    index = (inode - 1) % inodes_per_group
+;                Index inode table
+                
+                
+                
+                
+                
 :.exit          pops.r  d:REG_TEMP
                 pops.r  d:REG_STRA
                 pops.r  d:REG_DADR
@@ -219,9 +245,9 @@
 :dsk_xbadblock  !str "Superblock is corrupt.\n\r\0"
 :dsk_xgudblock  !str "Superblock is present.\n\r\0"
 :dsk_xlabelbeg  !str "Mounting partition \"\0"
-:dsk_xlabelbeg  !str "\"...\n\r\0"
+:dsk_xlabelend  !str "\"...\n\r\0"
 
-!include    "../../rom/bios_bus.asm"
-!include    "../../rom/bios_uart.asm"
-!include    "../../rom/bios_string.asm"
-!include    "../../rom/bios_video.asm"
+!include    "../rom/bios_bus.asm"
+!include    "../rom/bios_uart.asm"
+!include    "../rom/bios_string.asm"
+!include    "../rom/bios_video.asm"

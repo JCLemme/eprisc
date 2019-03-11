@@ -1,0 +1,672 @@
+address:    output     | source
+-----------------------+---------------------------------------------------------------------------
+                    ==>| [disktest.asm]
+0x00004000: 0x80000002 | [0014] :jdsk_gparts    brch.a  a:dsk_gparts
+0x00004001: 0x80000066 | [0015] :jdsk_rsuper    brch.a  a:dsk_rsuper
+0x00004002: 0x61c00000 | [0023] :dsk_gparts     push.r  s:REG_DADR
+0x00004003: 0x61d00000 | [0024]                 push.r  s:REG_STRA
+0x00004004: 0x61e00000 | [0025]                 push.r  s:REG_TEMP
+0x00004005: 0x2c008000 | [0027]                 move.v  d:REG_DADR v:#h8000                         ; Where the disk image starts
+0x00004006: 0x180cc07f | [0029]                 addr.v  d:REG_DADR a:REG_DADR v:#h7F                ; Look for the MBR signature
+0x00004007: 0x2e00ffff | [0030]                 move.v  d:REG_TEMP v:#hFFFF 
+0x00004008: 0x4cd00000 | [0031]                 load.o  d:REG_STRA r:REG_DADR
+0x00004009: 0x102dde00 | [0032]                 andb.r  d:REG_STRA a:REG_STRA b:REG_TEMP
+0x0000400a: 0x2e0055aa | [0033]                 move.v  d:REG_TEMP v:#h55AA 
+0x0000400b: 0x10e0de00 | [0034]                 cmpr.r  a:REG_STRA b:REG_TEMP                       ; Is MBR signature valid?
+0x0000400c: 0x81000006 | [0035]                 brch.a  c:%EQL a:.goodmbr                           ; If so, do something about it
+0x0000400d: 0x2800408f | [0036]                 move.v  d:%Yw v:dsk_strcrrpt                        ; Disk is corrupt
+0x0000400e: 0x61800000 | [0037]                 push.r  s:%Yw
+0x0000400f: 0xd00001a3 | [0038]                 call.s  a:str_puts
+0x00004010: 0x41800000 | [0039]                 pops.r  d:%Yw                                       ; Print the crash message
+0x00004011: 0x80000052 | [0040]                 brch.a  a:.exit                                     ; And abort
+0x00004012: 0x28004095 | [0042] :.goodmbr       move.v  d:%Yw v:dsk_strvalid                        ; Disk is valid
+0x00004013: 0x61800000 | [0043]                 push.r  s:%Yw
+0x00004014: 0xd000019e | [0044]                 call.s  a:str_puts
+0x00004015: 0x41800000 | [0045]                 pops.r  d:%Yw                                       ; Print the acceptance message
+0x00004016: 0x181cc07f | [0047]                 subr.v  d:REG_DADR a:REG_DADR v:#h7F                ; Get the disk offset back
+0x00004017: 0x28004099 | [0049]                 move.v  d:%Yw v:dsk_strplabl                        ; "Partition"
+0x00004018: 0x61800000 | [0050]                 push.r  s:%Yw
+0x00004019: 0xd0000199 | [0051]                 call.s  a:str_puts
+0x0000401a: 0x41800000 | [0052]                 pops.r  d:%Yw                                       
+0x0000401b: 0x2e000001 | [0054]                 move.v  d:REG_TEMP v:#h01
+0x0000401c: 0x61e00000 | [0055]                 push.r  s:REG_TEMP
+0x0000401d: 0xd0000149 | [0056]                 call.s  a:str_hnum
+0x0000401e: 0x41e00000 | [0057]                 pops.r  d:REG_TEMP                                  ; Partition number
+0x0000401f: 0x2800409c | [0059]                 move.v  d:%Yw v:dsk_strplabn                        ; ":"
+0x00004020: 0x61800000 | [0060]                 push.r  s:%Yw
+0x00004021: 0xd0000191 | [0061]                 call.s  a:str_puts
+0x00004022: 0x41800000 | [0062]                 pops.r  d:%Yw   
+0x00004023: 0x180cc070 | [0064]                 addr.v  d:REG_DADR a:REG_DADR v:#h70                ; Block with the partition ID
+0x00004024: 0x4cd00000 | [0065]                 load.o  d:REG_STRA r:REG_DADR
+0x00004025: 0x18ddd4ff | [0066]                 masr.v  d:REG_STRA a:REG_STRA v:#hFF s:#h04         ; Get said partition ID
+0x00004026: 0x18e0d000 | [0067]                 cmpr.v  a:REG_STRA v:#h00
+0x00004027: 0x82000006 | [0068]                 brch.a  c:%NEQ a:.prespart
+0x00004028: 0x280040a2 | [0069]                 move.v  d:%Yw v:dsk_strempty                        ; Partition isn't there
+0x00004029: 0x61800000 | [0070]                 push.r  s:%Yw
+0x0000402a: 0xd0000188 | [0071]                 call.s  a:str_puts
+0x0000402b: 0x41800000 | [0072]                 pops.r  d:%Yw                                       ; Print the empty message
+0x0000402c: 0x80000037 | [0073]                 brch.a  a:.exit                                     ; And abort  
+0x0000402d: 0x280040aa | [0075] :.prespart      move.v  d:%Yw v:dsk_strtypen                        ; Partition is there
+0x0000402e: 0x61800000 | [0076]                 push.r  s:%Yw
+0x0000402f: 0xd0000183 | [0077]                 call.s  a:str_puts
+0x00004030: 0x41800000 | [0078]                 pops.r  d:%Yw                                       ; "Partition type is"
+0x00004031: 0x61d00000 | [0080]                 push.r  s:REG_STRA
+0x00004032: 0xd0000134 | [0081]                 call.s  a:str_hnum
+0x00004033: 0x41d00000 | [0082]                 pops.r  d:REG_STRA                                  ; Partition type
+0x00004034: 0x2800409d | [0084]                 move.v  d:%Yw v:dsk_strplabd                        ; "."
+0x00004035: 0x61800000 | [0085]                 push.r  s:%Yw
+0x00004036: 0xd000017c | [0086]                 call.s  a:str_puts
+0x00004037: 0x41800000 | [0087]                 pops.r  d:%Yw   
+0x00004038: 0x180cc001 | [0089]                 addr.v  d:REG_DADR a:REG_DADR v:#h01                ; The starting sector lives in the next word
+0x00004039: 0x4cd00000 | [0090]                 load.o  d:REG_STRA r:REG_DADR
+0x0000403a: 0x186dd010 | [0091]                 arsl.v  d:REG_STRA a:REG_STRA v:#h10
+0x0000403b: 0x180cc001 | [0092]                 addr.v  d:REG_DADR a:REG_DADR v:#h01                ; The rest of the starting sector lives in the next word
+0x0000403c: 0x4ce00000 | [0093]                 load.o  d:REG_TEMP r:REG_DADR
+0x0000403d: 0x61d00000 | [0094]                 push.r  s:REG_STRA
+0x0000403e: 0x2d00ffff | [0095]                 move.v  d:REG_STRA v:#hFFFF 
+0x0000403f: 0x102eed00 | [0096]                 andb.r  d:REG_TEMP a:REG_TEMP b:REG_STRA
+0x00004040: 0x188ee010 | [0097]                 losr.v  d:REG_TEMP a:REG_TEMP v:#h10
+0x00004041: 0x41d00000 | [0098]                 pops.r  d:REG_STRA
+0x00004042: 0x103dde00 | [0099]                 orbt.r  d:REG_STRA a:REG_STRA b:REG_TEMP            ; REASSEMBLE
+0x00004043: 0x280040b0 | [0102]                 move.v  d:%Yw v:dsk_strloadn                        
+0x00004044: 0x61800000 | [0103]                 push.r  s:%Yw
+0x00004045: 0xd000016d | [0104]                 call.s  a:str_puts
+0x00004046: 0x41800000 | [0105]                 pops.r  d:%Yw                                       ; "Partition starts at"
+0x00004047: 0x61d00000 | [0107]                 push.r  s:REG_STRA
+0x00004048: 0xd000011e | [0108]                 call.s  a:str_hnum
+0x00004049: 0x41d00000 | [0109]                 pops.r  d:REG_STRA                                  ; Partition start LBA
+0x0000404a: 0x2800409d | [0111]                 move.v  d:%Yw v:dsk_strplabd                        
+0x0000404b: 0x61800000 | [0112]                 push.r  s:%Yw
+0x0000404c: 0xd0000166 | [0113]                 call.s  a:str_puts
+0x0000404d: 0x41800000 | [0114]                 pops.r  d:%Yw                                       ; "."
+0x0000404e: 0x4cd00000 | [0116]                 load.o  d:REG_STRA r:REG_DADR
+0x0000404f: 0x186dd010 | [0117]                 arsl.v  d:REG_STRA a:REG_STRA v:#h10
+0x00004050: 0x180cc001 | [0118]                 addr.v  d:REG_DADR a:REG_DADR v:#h01                ; The rest of the run length lives in the next word
+0x00004051: 0x4ce00000 | [0119]                 load.o  d:REG_TEMP r:REG_DADR
+0x00004052: 0x61d00000 | [0120]                 push.r  s:REG_STRA
+0x00004053: 0x2d00ffff | [0121]                 move.v  d:REG_STRA v:#hFFFF 
+0x00004054: 0x102eed00 | [0122]                 andb.r  d:REG_TEMP a:REG_TEMP b:REG_STRA
+0x00004055: 0x188ee010 | [0123]                 losr.v  d:REG_TEMP a:REG_TEMP v:#h10
+0x00004056: 0x41d00000 | [0124]                 pops.r  d:REG_STRA
+0x00004057: 0x103dde00 | [0125]                 orbt.r  d:REG_STRA a:REG_STRA b:REG_TEMP            ; REASSEMBLE
+0x00004058: 0x280040b6 | [0128]                 move.v  d:%Yw v:dsk_strlengn                        
+0x00004059: 0x61800000 | [0129]                 push.r  s:%Yw
+0x0000405a: 0xd0000158 | [0130]                 call.s  a:str_puts
+0x0000405b: 0x41800000 | [0131]                 pops.r  d:%Yw                                       ; "Partition runs for"
+0x0000405c: 0x61d00000 | [0133]                 push.r  s:REG_STRA
+0x0000405d: 0xd0000109 | [0134]                 call.s  a:str_hnum
+0x0000405e: 0x41d00000 | [0135]                 pops.r  d:REG_STRA                                  ; Partition length in LBA
+0x0000405f: 0x2800409f | [0137]                 move.v  d:%Yw v:dsk_strplabs                      
+0x00004060: 0x61800000 | [0138]                 push.r  s:%Yw
+0x00004061: 0xd0000151 | [0139]                 call.s  a:str_puts
+0x00004062: 0x41800000 | [0140]                 pops.r  d:%Yw                                       ; "sectors."
+0x00004063: 0x41e00000 | [0142] :.exit          pops.r  d:REG_TEMP
+0x00004064: 0x41d00000 | [0143]                 pops.r  d:REG_STRA
+0x00004065: 0x41c00000 | [0144]                 pops.r  d:REG_DADR
+0x00004066: 0xf0000000 | [0145]                 rtrn.s                                              ; And return
+0x00004067: 0x61c00000 | [0155] :dsk_rsuper     push.r  s:REG_DADR
+0x00004068: 0x61d00000 | [0156]                 push.r  s:REG_STRA
+0x00004069: 0x61e00000 | [0157]                 push.r  s:REG_TEMP
+0x0000406a: 0x2c048000 | [0159]                 move.v  d:REG_DADR v:#h48000                        ; Where the partition starts        
+0x0000406b: 0x180cc210 | [0160]                 addr.v  d:REG_DADR a:REG_DADR v:#h10 s:#h02         ; The superblock begins 100 words ahead of the partition start
+0x0000406c: 0x180cc00e | [0162]                 addr.v  d:REG_DADR a:REG_DADR v:#h0E                ; Look for the magic number
+0x0000406d: 0x4cd00000 | [0163]                 load.o  d:REG_STRA r:REG_DADR
+0x0000406e: 0x2e00ffff | [0165]                 move.v  d:REG_TEMP v:#hFFFF 
+0x0000406f: 0x102dde00 | [0166]                 andb.r  d:REG_STRA a:REG_STRA b:REG_TEMP
+0x00004070: 0x2e00ef53 | [0167]                 move.v  d:REG_TEMP v:#hEF53
+0x00004071: 0x10e0de00 | [0168]                 cmpr.r  a:REG_STRA b:REG_TEMP
+0x00004072: 0x81000006 | [0169]                 brch.a  c:%EQL a:.goodsblk                          ; Jump away if the superblock is present
+0x00004073: 0x280040bc | [0171]                 move.v  d:%Yw v:dsk_xbadblock                        
+0x00004074: 0x61800000 | [0172]                 push.r  s:%Yw
+0x00004075: 0xd000013d | [0173]                 call.s  a:str_puts
+0x00004076: 0x41800000 | [0174]                 pops.r  d:%Yw                                       ; Bad superblock
+0x00004077: 0x80000014 | [0175]                 brch.a  a:.exit
+0x00004078: 0x280040c3 | [0177] :.goodsblk      move.v  d:%Yw v:dsk_xgudblock                        
+0x00004079: 0x61800000 | [0178]                 push.r  s:%Yw
+0x0000407a: 0xd0000138 | [0179]                 call.s  a:str_puts
+0x0000407b: 0x41800000 | [0180]                 pops.r  d:%Yw                                       ; Good superblock
+0x0000407c: 0x280040ca | [0182]                 move.v  d:%Yw v:dsk_xlabelbeg                       
+0x0000407d: 0x61800000 | [0183]                 push.r  s:%Yw
+0x0000407e: 0xd0000134 | [0184]                 call.s  a:str_puts
+0x0000407f: 0x41800000 | [0185]                 pops.r  d:%Yw                                       ; "Disk"
+0x00004080: 0x181cc00e | [0187]                 subr.v  d:REG_DADR a:REG_DADR v:#h0E               
+0x00004081: 0x180cc01e | [0188]                 addr.v  d:REG_DADR a:REG_DADR v:#h1E                ; Volume label
+0x00004082: 0x61c00000 | [0189]                 push.r  s:REG_DADR
+0x00004083: 0xd000012f | [0190]                 call.s  a:str_puts
+0x00004084: 0x41c00000 | [0191]                 pops.r  d:REG_DADR
+0x00004085: 0x280040d0 | [0193]                 move.v  d:%Yw v:dsk_xlabelend                        
+0x00004086: 0x61800000 | [0194]                 push.r  s:%Yw
+0x00004087: 0xd000012b | [0195]                 call.s  a:str_puts
+0x00004088: 0x41800000 | [0196]                 pops.r  d:%Yw                                       ; "loaded"
+0x00004089: 0x181cc01e | [0198]                 subr.v  d:REG_DADR a:REG_DADR v:#h1E               
+0x0000408a: 0x180cc01e | [0199]                 addr.v  d:REG_DADR a:REG_DADR v:#h1E                ; Volume label
+0x0000408b: 0x41e00000 | [0227] :.exit          pops.r  d:REG_TEMP
+0x0000408c: 0x41d00000 | [0228]                 pops.r  d:REG_STRA
+0x0000408d: 0x41c00000 | [0229]                 pops.r  d:REG_DADR
+0x0000408e: 0xf0000000 | [0230]                 rtrn.s                                              ; And return
+0x0000408f: 0x4d425220 |
+            0x61707065 |
+            0x61727320 |
+            0x636f7272 |
+            0x7570742e |
+            0x0a0d0000 | [0233] :dsk_strcrrpt   !str "MBR appears corrupt.\n\r\0"
+0x00004095: 0x4d425220 |
+            0x69732076 |
+            0x616c6964 |
+            0x2e0a0d00 | [0234] :dsk_strvalid   !str "MBR is valid.\n\r\0"
+0x00004099: 0x50617274 |
+            0x6974696f |
+            0x6e200000 | [0235] :dsk_strplabl   !str "Partition \0"
+0x0000409c: 0x3a0a0d00 | [0236] :dsk_strplabn   !str ":\n\r\0"
+0x0000409d: 0x2e0a0d00 | [0237] :dsk_strplabd   !str ".\n\r\0"
+0x0000409e: 0x0a0d0000 | [0238] :dsk_strplabr   !str "\n\r\0"
+0x0000409f: 0x20736563 |
+            0x746f7273 |
+            0x2e0a0d00 | [0239] :dsk_strplabs   !str " sectors.\n\r\0"
+0x000040a2: 0x20205061 |
+            0x72746974 |
+            0x696f6e20 |
+            0x6973206e |
+            0x6f742070 |
+            0x72657365 |
+            0x6e742e0a |
+            0x0d000000 | [0240] :dsk_strempty   !str "  Partition is not present.\n\r\0"
+0x000040aa: 0x20205061 |
+            0x72746974 |
+            0x696f6e20 |
+            0x74797065 |
+            0x20697320 |
+            0x00000000 | [0241] :dsk_strtypen   !str "  Partition type is \0"
+0x000040b0: 0x20205061 |
+            0x72746974 |
+            0x696f6e20 |
+            0x73746172 |
+            0x74732061 |
+            0x74200000 | [0242] :dsk_strloadn   !str "  Partition starts at \0"
+0x000040b6: 0x20205061 |
+            0x72746974 |
+            0x696f6e20 |
+            0x72756e73 |
+            0x20666f72 |
+            0x20000000 | [0243] :dsk_strlengn   !str "  Partition runs for \0"
+0x000040bc: 0x53757065 |
+            0x72626c6f |
+            0x636b2069 |
+            0x7320636f |
+            0x72727570 |
+            0x742e0a0d |
+            0x00000000 | [0245] :dsk_xbadblock  !str "Superblock is corrupt.\n\r\0"
+0x000040c3: 0x53757065 |
+            0x72626c6f |
+            0x636b2069 |
+            0x73207072 |
+            0x6573656e |
+            0x742e0a0d |
+            0x00000000 | [0246] :dsk_xgudblock  !str "Superblock is present.\n\r\0"
+0x000040ca: 0x4d6f756e |
+            0x74696e67 |
+            0x20706172 |
+            0x74697469 |
+            0x6f6e2000 |
+            0x00000000 | [0247] :dsk_xlabelbeg  !str "Mounting partition \"\0"
+0x000040d0: 0x002e2e2e |
+            0x0a0d0000 | [0248] :dsk_xlabelend  !str "\"...\n\r\0"
+                    ==>| [../rom/bios_bus.asm]
+0x000040d2: 0x61c00000 | [0012] :ioc_init       push.r  s:REG_BASE
+0x000040d3: 0x2c002000 | [0013]                 move.v  d:REG_BASE v:#BUS_BASE_ADDRESS
+0x000040d4: 0x2f010001 | [0014]                 move.v  d:REG_RESP v:#h10001
+0x000040d5: 0x6cf00000 | [0015]                 stor.o  r:REG_BASE s:REG_RESP
+0x000040d6: 0x04000000 | [0016]                 noop.i
+0x000040d7: 0x04000000 | [0017]                 noop.i
+0x000040d8: 0x04000000 | [0018]                 noop.i
+0x000040d9: 0x04000000 | [0019]                 noop.i                                              ; Reset the I/O controller
+0x000040da: 0x4cf00000 | [0020] :.wloop         load.o  r:REG_BASE d:REG_RESP
+0x000040db: 0x18f0f001 | [0021]                 test.v  a:REG_RESP v:#h01
+0x000040dc: 0x820ffffe | [0022]                 brch.a  c:%NEQ a:.wloop                             ; Wait for send to complete
+0x000040dd: 0x4cf00000 | [0024] :.tloop         load.o  r:REG_BASE d:REG_RESP
+0x000040de: 0x18f0f002 | [0025]                 test.v  a:REG_RESP v:#h02
+0x000040df: 0x820ffffe | [0026]                 brch.a  c:%NEQ a:.tloop                             ; Wait for send to complete
+0x000040e0: 0x41c00000 | [0028]                 pops.r  d:REG_BASE
+0x000040e1: 0xf0000000 | [0029]                 rtrn.s                                              ; Return from stack
+0x000040e2: 0x61e00000 | [0038] :ioc_send       push.r  s:REG_ADDR
+0x000040e3: 0x61d00000 | [0039]                 push.r  s:REG_DATA
+0x000040e4: 0x61c00000 | [0040]                 push.r  s:REG_BASE
+0x000040e5: 0x18111004 | [0041]                 subr.v  d:%SP a:%SP v:#h04
+0x000040e6: 0x2c002000 | [0042]                 move.v  d:REG_BASE v:#BUS_BASE_ADDRESS
+0x000040e7: 0x41d00000 | [0043]                 pops.r  d:REG_DATA
+0x000040e8: 0x41e00000 | [0044]                 pops.r  d:REG_ADDR                                  
+0x000040e9: 0x18011006 | [0045]                 addr.v  d:%SP a:%SP v:#h06                          ; Set up the stack
+0x000040ea: 0x2f600008 | [0047]                 move.v  d:REG_RESP v:#h8 s:#h06
+0x000040eb: 0x103ffe00 | [0048]                 orbt.r  d:REG_RESP a:REG_RESP b:REG_ADDR
+0x000040ec: 0x186ff010 | [0049]                 arsl.v  d:REG_RESP a:REG_RESP v:#h10                ; Form write packet at address
+0x000040ed: 0x103ffd00 | [0050]                 orbt.r  d:REG_RESP a:REG_RESP b:REG_DATA            ; Add data
+0x000040ee: 0x6cf00001 | [0051]                 stor.o  r:REG_BASE s:REG_RESP o:#h01                ; Store packet in send register
+0x000040ef: 0x2f010005 | [0052]                 move.v  d:REG_RESP v:#h10005
+0x000040f0: 0x6cf00000 | [0053]                 stor.o  r:REG_BASE s:REG_RESP                       ; Command send
+0x000040f1: 0x4cf00000 | [0055] :.wloop         load.o  r:REG_BASE d:REG_RESP
+0x000040f2: 0x18f0f001 | [0056]                 test.v  a:REG_RESP v:#h01
+0x000040f3: 0x820ffffe | [0057]                 brch.a  c:%NEQ a:.wloop                             ; Wait for send to complete
+0x000040f4: 0x4cf00000 | [0059] :.tloop         load.o  r:REG_BASE d:REG_RESP
+0x000040f5: 0x18f0f002 | [0060]                 test.v  a:REG_RESP v:#h02
+0x000040f6: 0x820ffffe | [0061]                 brch.a  c:%NEQ a:.tloop                             ; Wait for send to complete
+0x000040f7: 0x4cf00002 | [0063]                 load.o  r:REG_BASE d:REG_RESP o:#h02                ; Load response into register
+0x000040f8: 0x41c00000 | [0065]                 pops.r  d:REG_BASE
+0x000040f9: 0x41d00000 | [0066]                 pops.r  d:REG_DATA
+0x000040fa: 0x41e00000 | [0067]                 pops.r  d:REG_ADDR                                  ; Restore registers
+0x000040fb: 0xf0000000 | [0068]                 rtrn.s                                              ; Return from stack
+0x000040fc: 0x61e00000 | [0077] :ioc_recv       push.r  s:REG_ADDR
+0x000040fd: 0x61c00000 | [0078]                 push.r  s:REG_BASE
+0x000040fe: 0x18111003 | [0079]                 subr.v  d:%SP a:%SP v:#h03
+0x000040ff: 0x2c002000 | [0080]                 move.v  d:REG_BASE v:#BUS_BASE_ADDRESS
+0x00004100: 0x41e00000 | [0081]                 pops.r  d:REG_ADDR                                  
+0x00004101: 0x18011004 | [0082]                 addr.v  d:%SP a:%SP v:#h04                          ; Set up the stack
+0x00004102: 0x2f600000 | [0084]                 move.v  d:REG_RESP v:#h00 s:#h06
+0x00004103: 0x103ffe00 | [0085]                 orbt.r  d:REG_RESP a:REG_RESP b:REG_ADDR
+0x00004104: 0x186ff010 | [0086]                 arsl.v  d:REG_RESP a:REG_RESP v:#h10                ; Form read packet at address
+0x00004105: 0x6cf00001 | [0087]                 stor.o  r:REG_BASE s:REG_RESP o:#h01                ; Store packet in send register
+0x00004106: 0x2f010005 | [0088]                 move.v  d:REG_RESP v:#h10005
+0x00004107: 0x6cf00000 | [0089]                 stor.o  r:REG_BASE s:REG_RESP                       ; Command send
+0x00004108: 0x4cf00000 | [0090] :.wloop         load.o  r:REG_BASE d:REG_RESP
+0x00004109: 0x18f0f001 | [0091]                 test.v  a:REG_RESP v:#h01
+0x0000410a: 0x820ffffe | [0092]                 brch.a  c:%NEQ a:.wloop                             ; Wait for send to complete
+0x0000410b: 0x4cf00000 | [0094] :.tloop         load.o  r:REG_BASE d:REG_RESP
+0x0000410c: 0x18f0f002 | [0095]                 test.v  a:REG_RESP v:#h02
+0x0000410d: 0x820ffffe | [0096]                 brch.a  c:%NEQ a:.tloop                             ; Wait for send to complete
+0x0000410e: 0x2f600000 | [0098]                 move.v  d:REG_RESP v:#h00 s:#h06
+0x0000410f: 0x103ffe00 | [0099]                 orbt.r  d:REG_RESP a:REG_RESP b:REG_ADDR
+0x00004110: 0x186ff010 | [0100]                 arsl.v  d:REG_RESP a:REG_RESP v:#h10                ; Form read packet at address
+0x00004111: 0x6cf00001 | [0101]                 stor.o  r:REG_BASE s:REG_RESP o:#h01                ; Store packet in send register
+0x00004112: 0x2f010005 | [0102]                 move.v  d:REG_RESP v:#h10005
+0x00004113: 0x6cf00000 | [0103]                 stor.o  r:REG_BASE s:REG_RESP                       ; Command send
+0x00004114: 0x4cf00000 | [0104] :.gloop         load.o  r:REG_BASE d:REG_RESP
+0x00004115: 0x18f0f001 | [0105]                 test.v  a:REG_RESP v:#h01
+0x00004116: 0x820ffffe | [0106]                 brch.a  c:%NEQ a:.gloop                             ; Wait for send to complete
+0x00004117: 0x4cf00000 | [0108] :.sloop         load.o  r:REG_BASE d:REG_RESP
+0x00004118: 0x18f0f002 | [0109]                 test.v  a:REG_RESP v:#h02
+0x00004119: 0x820ffffe | [0110]                 brch.a  c:%NEQ a:.sloop                             ; Wait for send to complete
+0x0000411a: 0x4cf00002 | [0112]                 load.o  r:REG_BASE d:REG_RESP o:#h02                ; Load response into register
+0x0000411b: 0x41c00000 | [0114]                 pops.r  d:REG_BASE
+0x0000411c: 0x41e00000 | [0115]                 pops.r  d:REG_ADDR                                  ; Restore registers
+0x0000411d: 0xf0000000 | [0116]                 rtrn.s                                              ; Return from stack
+                    ==>| [../rom/bios_uart.asm]
+0x0000411e: 0x61d00000 | [0013] :ser_send       push.r  s:REG_DATA
+0x0000411f: 0x61c00000 | [0014]                 push.r  s:REG_BASE
+0x00004120: 0x18111003 | [0015]                 subr.v  d:%SP a:%SP v:#h03
+0x00004121: 0x2c002000 | [0016]                 move.v  d:REG_BASE v:#BUS_BASE_ADDRESS
+0x00004122: 0x41d00000 | [0017]                 pops.r  d:REG_DATA                                  ; Set up the stack
+0x00004123: 0x18011004 | [0018]                 addr.v  d:%SP a:%SP v:#h04
+0x00004124: 0x2f000011 | [0057]                 move.v  d:REG_RESP v:#h011
+0x00004125: 0x61f00000 | [0058]                 push.r  s:REG_RESP
+0x00004126: 0x61d00000 | [0059]                 push.r  s:REG_DATA
+0x00004127: 0xd00fffbb | [0060]                 call.s  a:ioc_send
+0x00004128: 0x41d00000 | [0061]                 pops.r  d:REG_DATA
+0x00004129: 0x41f00000 | [0062]                 pops.r  d:REG_RESP
+0x0000412a: 0x2f000010 | [0064]                 move.v  d:REG_RESP v:#h010
+0x0000412b: 0x61f00000 | [0065]                 push.r  s:REG_RESP
+0x0000412c: 0x2f000080 | [0066]                 move.v  d:REG_RESP v:#h80
+0x0000412d: 0x61f00000 | [0067]                 push.r  s:REG_RESP
+0x0000412e: 0xd00fffb4 | [0068]                 call.s  a:ioc_send
+0x0000412f: 0x41d00000 | [0069]                 pops.r  d:REG_DATA
+0x00004130: 0x41f00000 | [0070]                 pops.r  d:REG_RESP
+0x00004131: 0x2f000010 | [0072]                 move.v  d:REG_RESP v:#h010
+0x00004132: 0x61f00000 | [0073]                 push.r  s:REG_RESP
+0x00004133: 0xd00fffc9 | [0074] :.sloop         call.s  a:ioc_recv
+0x00004134: 0x18f0f080 | [0075]                 test.v  a:REG_RESP v:#h80
+0x00004135: 0x820ffffe | [0076]                 brch.a  c:%NEQ a:.sloop
+0x00004136: 0x41f00000 | [0078]                 pops.r  d:REG_RESP 
+0x00004137: 0x41c00000 | [0080]                 pops.r  d:REG_BASE
+0x00004138: 0x41d00000 | [0081]                 pops.r  d:REG_DATA
+0x00004139: 0xf0000000 | [0082]                 rtrn.s                                              ; Return from stack
+0x0000413a: 0x61c00000 | [0088] :ser_srcv       push.r  s:REG_BASE
+0x0000413b: 0x2c002000 | [0089]                 move.v  d:REG_BASE v:#BUS_BASE_ADDRESS              ; Set up stack
+0x0000413c: 0x2f808010 | [0091]                 move.v  d:REG_RESP v:#h8010 s:#h08                  ; Enable serial data reception
+0x0000413d: 0x3f000020 | [0092]                 move.v  d:REG_RESP v:#h0020 o:%TRUE                 ; Data send packet
+0x0000413e: 0x6cf00001 | [0093]                 stor.o  r:REG_BASE s:REG_RESP o:#h01                ; Store packet in send register
+0x0000413f: 0x2f010005 | [0094]                 move.v  d:REG_RESP v:#h10005
+0x00004140: 0x6cf00000 | [0095]                 stor.o  r:REG_BASE s:REG_RESP                       ; Command send
+0x00004141: 0x4cf00000 | [0096] :.wloop         load.o  r:REG_BASE d:REG_RESP
+0x00004142: 0x18f0f001 | [0097]                 test.v  a:REG_RESP v:#h01
+0x00004143: 0x820ffffe | [0098]                 brch.a  c:%NEQ a:.wloop                             ; Wait for send to complete
+0x00004144: 0x2f800010 | [0100]                 move.v  d:REG_RESP v:#h0010 s:#h08                  ; Form read packet at address
+0x00004145: 0x6cf00001 | [0101]                 stor.o  r:REG_BASE s:REG_RESP o:#h01                ; Store packet in send register
+0x00004146: 0x2f010005 | [0102]                 move.v  d:REG_RESP v:#h10005
+0x00004147: 0x6cf00000 | [0103]                 stor.o  r:REG_BASE s:REG_RESP                       ; Command send
+0x00004148: 0x4cf00000 | [0104] :.xloop         load.o  r:REG_BASE d:REG_RESP
+0x00004149: 0x18f0f001 | [0105]                 test.v  a:REG_RESP v:#h01
+0x0000414a: 0x820ffffe | [0106]                 brch.a  c:%NEQ a:.xloop                             ; Wait for send to complete
+0x0000414b: 0x2f800010 | [0108] :.sloop         move.v  d:REG_RESP v:#h0010 s:#h08                  ; Form read packet at address
+0x0000414c: 0x6cf00001 | [0109]                 stor.o  r:REG_BASE s:REG_RESP o:#h01                ; Store packet in send register
+0x0000414d: 0x2f010005 | [0110]                 move.v  d:REG_RESP v:#h10005
+0x0000414e: 0x6cf00000 | [0111]                 stor.o  r:REG_BASE s:REG_RESP                       ; Command send
+0x0000414f: 0x4cf00000 | [0112] :.yloop         load.o  r:REG_BASE d:REG_RESP
+0x00004150: 0x18f0f001 | [0113]                 test.v  a:REG_RESP v:#h01
+0x00004151: 0x820ffffe | [0114]                 brch.a  c:%NEQ a:.yloop                             ; Wait for send to complete
+0x00004152: 0x4cf00002 | [0115]                 load.o  r:REG_BASE d:REG_RESP o:#h02                ; Load response into register
+0x00004153: 0x18f0f020 | [0116]                 test.v  a:REG_RESP v:#h20
+0x00004154: 0x820ffff7 | [0117]                 brch.a  c:%NEQ a:.sloop                             ; Wait for *serial* receive to happen
+0x00004155: 0x2f800012 | [0119]                 move.v  d:REG_RESP v:#h0012 s:#h08                  ; Form read packet at address
+0x00004156: 0x6cf00001 | [0120]                 stor.o  r:REG_BASE s:REG_RESP o:#h01                ; Store packet in send register
+0x00004157: 0x2f010005 | [0121]                 move.v  d:REG_RESP v:#h10005
+0x00004158: 0x6cf00000 | [0122]                 stor.o  r:REG_BASE s:REG_RESP                       ; Command send
+0x00004159: 0x4cf00000 | [0123] :.zloop         load.o  r:REG_BASE d:REG_RESP
+0x0000415a: 0x18f0f001 | [0124]                 test.v  a:REG_RESP v:#h01
+0x0000415b: 0x820ffffe | [0125]                 brch.a  c:%NEQ a:.zloop                             ; Wait for send to complete
+0x0000415c: 0x2f800012 | [0127] :.floop         move.v  d:REG_RESP v:#h0012 s:#h08                  ; Form read packet at address
+0x0000415d: 0x6cf00001 | [0128]                 stor.o  r:REG_BASE s:REG_RESP o:#h01                ; Store packet in send register
+0x0000415e: 0x2f010005 | [0129]                 move.v  d:REG_RESP v:#h10005
+0x0000415f: 0x6cf00000 | [0130]                 stor.o  r:REG_BASE s:REG_RESP                       ; Command send
+0x00004160: 0x4cf00000 | [0131] :.rloop         load.o  r:REG_BASE d:REG_RESP
+0x00004161: 0x18f0f001 | [0132]                 test.v  a:REG_RESP v:#h01
+0x00004162: 0x820ffffe | [0133]                 brch.a  c:%NEQ a:.rloop                             ; Wait for send to complete
+0x00004163: 0x4cf00002 | [0134]                 load.o  r:REG_BASE d:REG_RESP o:#h02                ; Load response into register
+0x00004164: 0x41c00000 | [0136]                 pops.r  d:REG_BASE
+0x00004165: 0xf0000000 | [0137]                 rtrn.s                                              ; Return from stack
+                    ==>| [../rom/bios_string.asm]
+0x00004166: 0x61c00000 | [0013] :str_hnum       push.r  s:REG_INPT
+0x00004167: 0x61d00000 | [0014]                 push.r  s:REG_WORK
+0x00004168: 0x61e00000 | [0015]                 push.r  s:REG_CONT
+0x00004169: 0x18111004 | [0016]                 subr.v  d:%SP a:%SP v:#h04                          ; Set up the stack
+0x0000416a: 0x41c00000 | [0017]                 pops.r  d:REG_INPT                                  ; Get the number we're supposed to print
+0x0000416b: 0x2e000008 | [0018]                 move.v  d:REG_CONT v:#h08
+0x0000416c: 0x18011005 | [0019]                 addr.v  d:%SP a:%SP v:#h05                          ; Set up the stack
+0x0000416d: 0x182dccf0 | [0021] :.ploop         andb.v  d:REG_WORK a:REG_INPT v:#hF0 s:#h0C         
+0x0000416e: 0x186cc004 | [0022]                 arsl.v  d:REG_INPT a:REG_INPT v:#h04
+0x0000416f: 0x188dd01c | [0023]                 losr.v  d:REG_WORK a:REG_WORK v:#h1C                ; Grab a nybble
+0x00004170: 0x180dd030 | [0025]                 addr.v  d:REG_WORK a:REG_WORK v:#h30                ; Make it an ASCII number
+0x00004171: 0x18e0d03a | [0026]                 cmpr.v  a:REG_WORK v:#h3A   
+0x00004172: 0x84000002 | [0027]                 brch.a  c:%LOW a:.prest                             ; Hex needs a little more
+0x00004173: 0x180dd007 | [0028]                 addr.v  d:REG_WORK a:REG_WORK v:#h07
+0x00004174: 0x61d00000 | [0029] :.prest         push.r  s:REG_WORK
+0x00004175: 0xd00fffa9 | [0030]                 call.s  a:ser_send
+0x00004176: 0x41d00000 | [0032]                 pops.r  d:REG_WORK                                  ; Print it
+0x00004177: 0x181ee001 | [0034]                 subr.v  d:REG_CONT a:REG_CONT v:#h01
+0x00004178: 0x18e0e000 | [0035]                 cmpr.v  a:REG_CONT v:#h00
+0x00004179: 0x820ffff4 | [0036]                 brch.a  c:%NEQ a:.ploop                             ; Repeat
+0x0000417a: 0x41e00000 | [0038]                 pops.r  d:REG_CONT
+0x0000417b: 0x41d00000 | [0039]                 pops.r  d:REG_WORK
+0x0000417c: 0x41c00000 | [0040]                 pops.r  d:REG_INPT
+0x0000417d: 0xf0000000 | [0041]                 rtrn.s                                              ; And return
+0x0000417e: 0x61c00000 | [0049] :str_lnum       push.r  s:REG_INPT
+0x0000417f: 0x61d00000 | [0050]                 push.r  s:REG_CONT
+0x00004180: 0x61e00000 | [0051]                 push.r  s:REG_WORK
+0x00004181: 0x18111004 | [0052]                 subr.v  d:%SP a:%SP v:#h04                          ; Set up the stack
+0x00004182: 0x41d00000 | [0053]                 pops.r  d:REG_CONT                                  ; Get the number we're supposed to print
+0x00004183: 0x41c00000 | [0054]                 pops.r  d:REG_INPT
+0x00004184: 0x18011006 | [0055]                 addr.v  d:%SP a:%SP v:#h06                          ; Set up the stack
+0x00004185: 0x61d00000 | [0057]                 push.r  s:REG_CONT
+0x00004186: 0x61c00000 | [0058]                 push.r  s:REG_INPT
+0x00004187: 0x2c000008 | [0059]                 move.v  d:REG_INPT v:#h08
+0x00004188: 0x101dcd00 | [0060]                 subr.r  d:REG_CONT a:REG_INPT b:REG_CONT
+0x00004189: 0x186dd002 | [0061]                 arsl.v  d:REG_CONT a:REG_CONT v:#h02
+0x0000418a: 0x41c00000 | [0062]                 pops.r  d:REG_INPT
+0x0000418b: 0x106ccd00 | [0063]                 arsl.r  d:REG_INPT a:REG_INPT b:REG_CONT
+0x0000418c: 0x41d00000 | [0064]                 pops.r  d:REG_CONT                                  ; Preshift for length selection
+0x0000418d: 0x182eccf0 | [0066] :.ploop         andb.v  d:REG_WORK a:REG_INPT v:#hF0 s:#h0C         
+0x0000418e: 0x186cc004 | [0067]                 arsl.v  d:REG_INPT a:REG_INPT v:#h04
+0x0000418f: 0x188ee01c | [0068]                 losr.v  d:REG_WORK a:REG_WORK v:#h1C                ; Grab a nybble
+0x00004190: 0x180ee030 | [0070]                 addr.v  d:REG_WORK a:REG_WORK v:#h30                ; Make it an ASCII number
+0x00004191: 0x18e0e03a | [0071]                 cmpr.v  a:REG_WORK v:#h3A   
+0x00004192: 0x84000002 | [0072]                 brch.a  c:%LOW a:.prest                             ; Hex needs a little more
+0x00004193: 0x180ee007 | [0073]                 addr.v  d:REG_WORK a:REG_WORK v:#h07
+0x00004194: 0x61e00000 | [0074] :.prest         push.r  s:REG_WORK
+0x00004195: 0xd00fff89 | [0075]                 call.s  a:ser_send
+0x00004196: 0x41e00000 | [0077]                 pops.r  d:REG_WORK                                  ; Print it
+0x00004197: 0x181dd001 | [0079]                 subr.v  d:REG_CONT a:REG_CONT v:#h01
+0x00004198: 0x18e0d000 | [0080]                 cmpr.v  a:REG_CONT v:#h00
+0x00004199: 0x820ffff4 | [0081]                 brch.a  c:%NEQ a:.ploop                             ; Repeat
+0x0000419a: 0x41e00000 | [0083]                 pops.r  d:REG_WORK
+0x0000419b: 0x41d00000 | [0084]                 pops.r  d:REG_CONT
+0x0000419c: 0x41c00000 | [0085]                 pops.r  d:REG_INPT
+0x0000419d: 0xf0000000 | [0086]                 rtrn.s                                              ; And return
+0x0000419e: 0x61c00000 | [0095] :str_getc       push.r  s:REG_SADR
+0x0000419f: 0x61d00000 | [0096]                 push.r  s:REG_WORD
+0x000041a0: 0x61e00000 | [0097]                 push.r  s:REG_ICHR
+0x000041a1: 0x18111004 | [0098]                 subr.v  d:%SP a:%SP v:#h04                          ; Set up the stack
+0x000041a2: 0x41d00000 | [0099]                 pops.r  d:REG_WORD                                  ; Get the index
+0x000041a3: 0x41c00000 | [0100]                 pops.r  d:REG_SADR                                  ; Get the string address
+0x000041a4: 0x18011006 | [0101]                 addr.v  d:%SP a:%SP v:#h06                          ; Set up the stack
+0x000041a5: 0x08ed0000 | [0103]                 move.r  d:REG_ICHR s:REG_WORD                       ; Copy index to ichr
+0x000041a6: 0x187dd002 | [0104]                 arsr.v  d:REG_WORD a:REG_WORD v:#h02                ; Divide index in word by 4
+0x000041a7: 0x100ccd00 | [0105]                 addr.r  d:REG_SADR a:REG_SADR b:REG_WORD
+0x000041a8: 0x4cf00000 | [0106]                 load.o  d:REG_RTRN r:REG_SADR                       ; Load correct word into rtrn
+0x000041a9: 0x2d000003 | [0107]                 move.v  d:REG_WORD v:#h03                           ; Move 3 into word
+0x000041aa: 0x182ee003 | [0108]                 andb.v  d:REG_ICHR a:REG_ICHR v:#h03                ; Mask off upper 30 of ichr
+0x000041ab: 0x101ede00 | [0109]                 subr.r  d:REG_ICHR a:REG_WORD b:REG_ICHR            ; Subtract ichr from word into ichr
+0x000041ac: 0x186ee003 | [0110]                 arsl.v  d:REG_ICHR a:REG_ICHR v:#h03                ; Multiply ichr by 8
+0x000041ad: 0x10dffeff | [0111]                 masr.r  d:REG_RTRN a:REG_RTRN b:REG_ICHR v:#hFF     ; Mask and shift right rtrn by ichr
+0x000041ae: 0x41e00000 | [0113]                 pops.r  d:REG_ICHR
+0x000041af: 0x41d00000 | [0114]                 pops.r  d:REG_WORD
+0x000041b0: 0x41c00000 | [0115]                 pops.r  d:REG_SADR
+0x000041b1: 0xf0000000 | [0116]                 rtrn.s                                              ; And return
+0x000041b2: 0x61c00000 | [0124] :str_puts       push.r  s:REG_SADR
+0x000041b3: 0x61d00000 | [0125]                 push.r  s:REG_CONT
+0x000041b4: 0x18111003 | [0126]                 subr.v  d:%SP a:%SP v:#h03                          ; Set up the stack
+0x000041b5: 0x2d000000 | [0127]                 move.v  d:REG_CONT v:#h00
+0x000041b6: 0x41c00000 | [0128]                 pops.r  d:REG_SADR                                  ; Get the string address
+0x000041b7: 0x18011004 | [0129]                 addr.v  d:%SP a:%SP v:#h04                          ; Set up the stack
+0x000041b8: 0x61c00000 | [0131]                 push.r  s:REG_SADR                                  ; Get the address on the stack
+0x000041b9: 0x61d00000 | [0133] :.strloop       push.r  s:REG_CONT
+0x000041ba: 0xd00fffe4 | [0134]                 call.s  a:str_getc                                  
+0x000041bb: 0x41d00000 | [0135]                 pops.r  d:REG_CONT                                  ; Get a character
+0x000041bc: 0x18e0f000 | [0137]                 cmpr.v  a:%Zz v:#h00                                ; Is it zero?
+0x000041bd: 0x81000006 | [0138]                 brch.a  c:%EQL a:.strend                            ; If so, exit
+0x000041be: 0x61f00000 | [0140]                 push.r  s:%Zz
+0x000041bf: 0xd00fff5f | [0141]                 call.s  a:ser_send
+0x000041c0: 0x41f00000 | [0143]                 pops.r  d:%Zz                                       ; Print it
+0x000041c1: 0x180dd001 | [0145]                 addr.v  d:REG_CONT a:REG_CONT v:#h01                ; Increment counter
+0x000041c2: 0x800ffff7 | [0146]                 brch.a  a:.strloop                                  ; Jump to top of loop
+0x000041c3: 0x41c00000 | [0148] :.strend        pops.r  d:REG_SADR
+0x000041c4: 0x41d00000 | [0149]                 pops.r  d:REG_CONT
+0x000041c5: 0x41c00000 | [0150]                 pops.r  d:REG_SADR
+0x000041c6: 0xf0000000 | [0151]                 rtrn.s                                              ; And return
+0x000041c7: 0x61c00000 | [0160] :str_putsl      push.r  s:REG_SADR
+0x000041c8: 0x61d00000 | [0161]                 push.r  s:REG_ENDA   
+0x000041c9: 0x61e00000 | [0162]                 push.r  s:REG_CONT
+0x000041ca: 0x18111004 | [0163]                 subr.v  d:%SP a:%SP v:#h04                          ; Set up the stack
+0x000041cb: 0x2e000000 | [0164]                 move.v  d:REG_CONT v:#h00
+0x000041cc: 0x41d00000 | [0165]                 pops.r  d:REG_ENDA                                  ; Get the string length
+0x000041cd: 0x41c00000 | [0166]                 pops.r  d:REG_SADR                                  ; Get the string address
+0x000041ce: 0x18011006 | [0167]                 addr.v  d:%SP a:%SP v:#h06                          ; Set up the stack
+0x000041cf: 0x61c00000 | [0169]                 push.r  s:REG_SADR                                  ; Get the address on the stack
+0x000041d0: 0x61e00000 | [0171] :.strloop       push.r  s:REG_CONT
+0x000041d1: 0xd00fffcd | [0172]                 call.s  a:str_getc                                  
+0x000041d2: 0x41e00000 | [0173]                 pops.r  d:REG_CONT                                  ; Get a character
+0x000041d3: 0x18e0f000 | [0175]                 cmpr.v  a:%Zz v:#h00                                ; Is it zero?
+0x000041d4: 0x81000008 | [0176]                 brch.a  c:%EQL a:.strend                            ; If so, exit
+0x000041d5: 0x61f00000 | [0178]                 push.r  s:%Zz
+0x000041d6: 0xd00fff48 | [0179]                 call.s  a:ser_send
+0x000041d7: 0x41f00000 | [0181]                 pops.r  d:%Zz                                       ; Print it
+0x000041d8: 0x180ee001 | [0183]                 addr.v  d:REG_CONT a:REG_CONT v:#h01                ; Increment counter
+0x000041d9: 0x181dd001 | [0184]                 subr.v  d:REG_ENDA a:REG_ENDA v:#h01                ; Increment counter
+0x000041da: 0x18e0d000 | [0185]                 cmpr.v  a:REG_ENDA v:#h00                           ; Are we done?
+0x000041db: 0x820ffff5 | [0186]                 brch.a  c:%NEQ a:.strloop                           ; If so, jump to top of loop
+0x000041dc: 0x41c00000 | [0188] :.strend        pops.r  d:REG_SADR
+0x000041dd: 0x41e00000 | [0189]                 pops.r  d:REG_CONT
+0x000041de: 0x41d00000 | [0190]                 pops.r  d:REG_ENDA
+0x000041df: 0x41c00000 | [0191]                 pops.r  d:REG_SADR
+0x000041e0: 0xf0000000 | [0192]                 rtrn.s                                              ; And return
+                    ==>| [../rom/bios_video.asm]
+0x000041e1: 0x61d00000 | [0019] :vga_init       push.r  s:REG_CWRK                                  ; Set up the stack
+0x000041e2: 0x2d000030 | [0021]                 move.v  d:REG_CWRK v:VGA_ADDR_CNFG
+0x000041e3: 0x61d00000 | [0022]                 push.r  s:REG_CWRK
+0x000041e4: 0x2d000000 | [0023]                 move.v  d:REG_CWRK v:#h00
+0x000041e5: 0x61d00000 | [0024]                 push.r  s:REG_CWRK
+0x000041e6: 0xd00ffefc | [0025]                 call.s  a:ioc_send
+0x000041e7: 0x41d00000 | [0026]                 pops.r  d:REG_CWRK
+0x000041e8: 0x41d00000 | [0027]                 pops.r  d:REG_CWRK                                  ; Clear config register
+0x000041e9: 0x2d000031 | [0029]                 move.v  d:REG_CWRK v:VGA_ADDR_CLMN
+0x000041ea: 0x61d00000 | [0030]                 push.r  s:REG_CWRK
+0x000041eb: 0x2d000000 | [0031]                 move.v  d:REG_CWRK v:#h00
+0x000041ec: 0x61d00000 | [0032]                 push.r  s:REG_CWRK
+0x000041ed: 0xd00ffef5 | [0033]                 call.s  a:ioc_send
+0x000041ee: 0x41d00000 | [0034]                 pops.r  d:REG_CWRK
+0x000041ef: 0x41d00000 | [0035]                 pops.r  d:REG_CWRK                                  ; Clear column register
+0x000041f0: 0x2d000032 | [0037]                 move.v  d:REG_CWRK v:VGA_ADDR_CROW
+0x000041f1: 0x61d00000 | [0038]                 push.r  s:REG_CWRK
+0x000041f2: 0x2d000000 | [0039]                 move.v  d:REG_CWRK v:#h00
+0x000041f3: 0x61d00000 | [0040]                 push.r  s:REG_CWRK
+0x000041f4: 0xd00ffeee | [0041]                 call.s  a:ioc_send
+0x000041f5: 0x41d00000 | [0042]                 pops.r  d:REG_CWRK
+0x000041f6: 0x41d00000 | [0043]                 pops.r  d:REG_CWRK                                  ; Clear row register
+0x000041f7: 0xd0000003 | [0045]                 call.s  a:vga_sclr                                  ; Clear the screen
+0x000041f8: 0x41d00000 | [0047]                 pops.r  d:REG_CWRK
+0x000041f9: 0xf0000000 | [0048]                 rtrn.s                                              ; And return
+0x000041fa: 0x61d00000 | [0055] :vga_sclr       push.r  s:REG_CWRK
+0x000041fb: 0x2d000031 | [0057]                 move.v  d:REG_CWRK v:VGA_ADDR_CLMN
+0x000041fc: 0x61d00000 | [0058]                 push.r  s:REG_CWRK
+0x000041fd: 0x2d000000 | [0059]                 move.v  d:REG_CWRK v:#h00
+0x000041fe: 0x61d00000 | [0060]                 push.r  s:REG_CWRK
+0x000041ff: 0xd00ffee3 | [0061]                 call.s  a:ioc_send
+0x00004200: 0x41d00000 | [0062]                 pops.r  d:REG_CWRK
+0x00004201: 0x41d00000 | [0063]                 pops.r  d:REG_CWRK                                  ; Clear column register
+0x00004202: 0x2d000032 | [0065]                 move.v  d:REG_CWRK v:VGA_ADDR_CROW
+0x00004203: 0x61d00000 | [0066]                 push.r  s:REG_CWRK
+0x00004204: 0x2d000000 | [0067]                 move.v  d:REG_CWRK v:#h00
+0x00004205: 0x61d00000 | [0068]                 push.r  s:REG_CWRK
+0x00004206: 0xd00ffedc | [0069]                 call.s  a:ioc_send
+0x00004207: 0x41d00000 | [0070]                 pops.r  d:REG_CWRK
+0x00004208: 0x41d00000 | [0071]                 pops.r  d:REG_CWRK                                  ; Clear row register
+0x00004209: 0x2d000033 | [0073] :.loop          move.v  d:REG_CWRK v:VGA_ADDR_DATA
+0x0000420a: 0x61d00000 | [0074]                 push.r  s:REG_CWRK
+0x0000420b: 0x2d000000 | [0075]                 move.v  d:REG_CWRK v:#h00
+0x0000420c: 0x61d00000 | [0076]                 push.r  s:REG_CWRK
+0x0000420d: 0xd00ffed5 | [0077]                 call.s  a:ioc_send
+0x0000420e: 0x41d00000 | [0078]                 pops.r  d:REG_CWRK
+0x0000420f: 0x41d00000 | [0079]                 pops.r  d:REG_CWRK                                  ; Clear the current cell
+0x00004210: 0x2d000031 | [0081]                 move.v  d:REG_CWRK v:VGA_ADDR_CLMN
+0x00004211: 0x61d00000 | [0082]                 push.r  s:REG_CWRK
+0x00004212: 0xd00ffeea | [0083]                 call.s  a:ioc_recv
+0x00004213: 0x41d00000 | [0084]                 pops.r  d:REG_CWRK                                  ; Get current column
+0x00004214: 0x180ff001 | [0090]                 addr.v  d:REG_RESP a:REG_RESP v:#h01                ; Increment column
+0x00004215: 0x61f00000 | [0091]                 push.r  s:REG_RESP
+0x00004216: 0x2d000031 | [0093]                 move.v  d:REG_CWRK v:VGA_ADDR_CLMN
+0x00004217: 0x61d00000 | [0094]                 push.r  s:REG_CWRK
+0x00004218: 0x61f00000 | [0095]                 push.r  s:REG_RESP
+0x00004219: 0xd00ffec9 | [0096]                 call.s  a:ioc_send
+0x0000421a: 0x41f00000 | [0097]                 pops.r  d:REG_RESP
+0x0000421b: 0x41d00000 | [0098]                 pops.r  d:REG_CWRK                                  ; Save new column register
+0x0000421c: 0x41f00000 | [0100]                 pops.r  d:REG_RESP
+0x0000421d: 0x18e0f050 | [0101]                 cmpr.v  a:REG_RESP v:#h50                           ; Did we go offscreen?
+0x0000421e: 0x820fffeb | [0102]                 brch.a  c:%NEQ a:.loop                              ; If not, jump back up
+0x0000421f: 0x2d000031 | [0104]                 move.v  d:REG_CWRK v:VGA_ADDR_CLMN
+0x00004220: 0x61d00000 | [0105]                 push.r  s:REG_CWRK
+0x00004221: 0x2d000000 | [0106]                 move.v  d:REG_CWRK v:#h00
+0x00004222: 0x61d00000 | [0107]                 push.r  s:REG_CWRK
+0x00004223: 0xd00ffebf | [0108]                 call.s  a:ioc_send
+0x00004224: 0x41d00000 | [0109]                 pops.r  d:REG_CWRK
+0x00004225: 0x41d00000 | [0110]                 pops.r  d:REG_CWRK                                  ; Clear column register
+0x00004226: 0x2d000032 | [0112]                 move.v  d:REG_CWRK v:VGA_ADDR_CROW
+0x00004227: 0x61d00000 | [0113]                 push.r  s:REG_CWRK
+0x00004228: 0xd00ffed4 | [0114]                 call.s  a:ioc_recv
+0x00004229: 0x41d00000 | [0115]                 pops.r  d:REG_CWRK                                  ; Get current row
+0x0000422a: 0x180ff001 | [0117]                 addr.v  d:REG_RESP a:REG_RESP v:#h01                ; Increment row
+0x0000422b: 0x61f00000 | [0118]                 push.r  s:REG_RESP
+0x0000422c: 0x2d000032 | [0120]                 move.v  d:REG_CWRK v:VGA_ADDR_CROW
+0x0000422d: 0x61d00000 | [0121]                 push.r  s:REG_CWRK
+0x0000422e: 0x61f00000 | [0122]                 push.r  s:REG_RESP
+0x0000422f: 0xd00ffeb3 | [0123]                 call.s  a:ioc_send
+0x00004230: 0x41f00000 | [0124]                 pops.r  d:REG_RESP
+0x00004231: 0x41d00000 | [0125]                 pops.r  d:REG_CWRK                                  ; Save new row register
+0x00004232: 0x41f00000 | [0127]                 pops.r  d:REG_RESP
+0x00004233: 0x18e0f028 | [0128]                 cmpr.v  a:REG_RESP v:#h28                           ; Did we go offscreen?
+0x00004234: 0x820fffd5 | [0129]                 brch.a  c:%NEQ a:.loop                              ; If not, jump back up
+0x00004235: 0x2d000032 | [0131]                 move.v  d:REG_CWRK v:VGA_ADDR_CROW
+0x00004236: 0x61d00000 | [0132]                 push.r  s:REG_CWRK
+0x00004237: 0x2d000000 | [0133]                 move.v  d:REG_CWRK v:#h00
+0x00004238: 0x61d00000 | [0134]                 push.r  s:REG_CWRK
+0x00004239: 0xd00ffea9 | [0135]                 call.s  a:ioc_send
+0x0000423a: 0x41d00000 | [0136]                 pops.r  d:REG_CWRK
+0x0000423b: 0x41d00000 | [0137]                 pops.r  d:REG_CWRK                                  ; Clear row register
+0x0000423c: 0x41d00000 | [0139]                 pops.r  d:REG_CWRK
+0x0000423d: 0xf0000000 | [0140]                 rtrn.s                                              ; And return
+0x0000423e: 0x61c00000 | [0148] :vga_putc       push.r  s:REG_HCHR
+0x0000423f: 0x61d00000 | [0149]                 push.r  s:REG_CWRK
+0x00004240: 0x18111003 | [0150]                 subr.v  d:%SP a:%SP v:#h03                          ; Set up the stack
+0x00004241: 0x41c00000 | [0151]                 pops.r  d:REG_HCHR                                  ; Get the character we're supposed to print
+0x00004242: 0x18011004 | [0152]                 addr.v  d:%SP a:%SP v:#h04                          ; Set up the stack
+0x00004243: 0x18e0c020 | [0154]                 cmpr.v  a:REG_HCHR v:#h20                           ; Is it greater than a space?
+0x00004244: 0x8300001e | [0155]                 brch.a  c:%HOS a:.print                             ; If so, it's visible
+0x00004245: 0x18e0c00d | [0157]                 cmpr.v  a:REG_HCHR v:#h0D                           ; Is it a carriage return?
+0x00004246: 0x82000009 | [0158]                 brch.a  c:%NEQ a:.notcr                             ; If not, jump down
+0x00004247: 0x2d000031 | [0159]                 move.v  d:REG_CWRK v:VGA_ADDR_CLMN
+0x00004248: 0x61d00000 | [0160]                 push.r  s:REG_CWRK
+0x00004249: 0x2d000000 | [0161]                 move.v  d:REG_CWRK v:#h00
+0x0000424a: 0x61d00000 | [0162]                 push.r  s:REG_CWRK
+0x0000424b: 0xd00ffe97 | [0163]                 call.s  a:ioc_send
+0x0000424c: 0x41d00000 | [0164]                 pops.r  d:REG_CWRK
+0x0000424d: 0x41d00000 | [0165]                 pops.r  d:REG_CWRK                                  ; Clear column register
+0x0000424e: 0x80000048 | [0166]                 brch.a  a:.exit                                     ; Get outta here
+0x0000424f: 0x18e0c00a | [0168] :.notcr         cmpr.v  a:REG_HCHR v:#h0A                           ; Is it a newline?
+0x00004250: 0x82000011 | [0169]                 brch.a  c:%NEQ a:.notlf                             ; If not, jump down
+0x00004251: 0x2d000032 | [0171]                 move.v  d:REG_CWRK v:VGA_ADDR_CROW
+0x00004252: 0x61d00000 | [0172]                 push.r  s:REG_CWRK
+0x00004253: 0xd00ffea9 | [0173]                 call.s  a:ioc_recv
+0x00004254: 0x41d00000 | [0174]                 pops.r  d:REG_CWRK                                  ; Get current row
+0x00004255: 0x180ff001 | [0176]                 addr.v  d:REG_RESP a:REG_RESP v:#h01                ; Increment row
+0x00004256: 0x61f00000 | [0177]                 push.r  s:REG_RESP
+0x00004257: 0x2d000032 | [0179]                 move.v  d:REG_CWRK v:VGA_ADDR_CROW
+0x00004258: 0x61d00000 | [0180]                 push.r  s:REG_CWRK
+0x00004259: 0x61f00000 | [0181]                 push.r  s:REG_RESP
+0x0000425a: 0xd00ffe88 | [0182]                 call.s  a:ioc_send
+0x0000425b: 0x41f00000 | [0183]                 pops.r  d:REG_RESP
+0x0000425c: 0x41d00000 | [0184]                 pops.r  d:REG_CWRK                                  ; Save new row register
+0x0000425d: 0x41f00000 | [0186]                 pops.r  d:REG_RESP
+0x0000425e: 0x18e0f028 | [0187]                 cmpr.v  a:REG_RESP v:#h28                           ; Did we go offscreen?
+0x0000425f: 0x81000036 | [0188]                 brch.a  c:%EQL a:.cexit                             ; If so, clear before exit
+0x00004260: 0x80000036 | [0189]                 brch.a  a:.exit                                     ; Just exit
+0x00004261: 0x80000035 | [0191] :.notlf         brch.a  a:.exit                                     ; Non-visible, so ignore it
+0x00004262: 0x183cc4ff | [0193] :.print         orbt.v  d:REG_HCHR a:REG_HCHR v:#hFF s:#h04         ; Print in white
+0x00004263: 0x2d000033 | [0195]                 move.v  d:REG_CWRK v:VGA_ADDR_DATA
+0x00004264: 0x61d00000 | [0196]                 push.r  s:REG_CWRK
+0x00004265: 0x61c00000 | [0197]                 push.r  s:REG_HCHR
+0x00004266: 0xd00ffe7c | [0198]                 call.s  a:ioc_send
+0x00004267: 0x41c00000 | [0199]                 pops.r  d:REG_HCHR
+0x00004268: 0x41d00000 | [0200]                 pops.r  d:REG_CWRK                                  ; Set the current cell
+0x00004269: 0x2d000031 | [0202]                 move.v  d:REG_CWRK v:VGA_ADDR_CLMN
+0x0000426a: 0x61d00000 | [0203]                 push.r  s:REG_CWRK
+0x0000426b: 0xd00ffe91 | [0204]                 call.s  a:ioc_recv
+0x0000426c: 0x41d00000 | [0205]                 pops.r  d:REG_CWRK                                  ; Get current column
+0x0000426d: 0x180ff001 | [0207]                 addr.v  d:REG_RESP a:REG_RESP v:#h01                ; Increment column
+0x0000426e: 0x61f00000 | [0208]                 push.r  s:REG_RESP
+0x0000426f: 0x2d000031 | [0210]                 move.v  d:REG_CWRK v:VGA_ADDR_CLMN
+0x00004270: 0x61d00000 | [0211]                 push.r  s:REG_CWRK
+0x00004271: 0x61f00000 | [0212]                 push.r  s:REG_RESP
+0x00004272: 0xd00ffe70 | [0213]                 call.s  a:ioc_send
+0x00004273: 0x41f00000 | [0214]                 pops.r  d:REG_RESP
+0x00004274: 0x41d00000 | [0215]                 pops.r  d:REG_CWRK                                  ; Save new column register
+0x00004275: 0x41f00000 | [0217]                 pops.r  d:REG_RESP
+0x00004276: 0x18e0f050 | [0218]                 cmpr.v  a:REG_RESP v:#h50                           ; Did we go offscreen?
+0x00004277: 0x8200001f | [0219]                 brch.a  c:%NEQ a:.exit                              ; If not, jump back up
+0x00004278: 0x2d000031 | [0221]                 move.v  d:REG_CWRK v:VGA_ADDR_CLMN
+0x00004279: 0x61d00000 | [0222]                 push.r  s:REG_CWRK
+0x0000427a: 0x2d000000 | [0223]                 move.v  d:REG_CWRK v:#h00
+0x0000427b: 0x61d00000 | [0224]                 push.r  s:REG_CWRK
+0x0000427c: 0xd00ffe66 | [0225]                 call.s  a:ioc_send
+0x0000427d: 0x41d00000 | [0226]                 pops.r  d:REG_CWRK
+0x0000427e: 0x41d00000 | [0227]                 pops.r  d:REG_CWRK                                  ; Clear column register
+0x0000427f: 0x2d000032 | [0229]                 move.v  d:REG_CWRK v:VGA_ADDR_CROW
+0x00004280: 0x61d00000 | [0230]                 push.r  s:REG_CWRK
+0x00004281: 0xd00ffe7b | [0231]                 call.s  a:ioc_recv
+0x00004282: 0x41d00000 | [0232]                 pops.r  d:REG_CWRK                                  ; Get current row
+0x00004283: 0x180ff001 | [0234]                 addr.v  d:REG_RESP a:REG_RESP v:#h01                ; Increment row
+0x00004284: 0x61f00000 | [0235]                 push.r  s:REG_RESP
+0x00004285: 0x2d000032 | [0237]                 move.v  d:REG_CWRK v:VGA_ADDR_CROW
+0x00004286: 0x61d00000 | [0238]                 push.r  s:REG_CWRK
+0x00004287: 0x61f00000 | [0239]                 push.r  s:REG_RESP
+0x00004288: 0xd00ffe5a | [0240]                 call.s  a:ioc_send
+0x00004289: 0x41f00000 | [0241]                 pops.r  d:REG_RESP
+0x0000428a: 0x41d00000 | [0242]                 pops.r  d:REG_CWRK                                  ; Save new row register
+0x0000428b: 0x41f00000 | [0244]                 pops.r  d:REG_RESP
+0x0000428c: 0x18e0f028 | [0245]                 cmpr.v  a:REG_RESP v:#h28                           ; Did we go offscreen?
+0x0000428d: 0x82000009 | [0246]                 brch.a  c:%NEQ a:.exit                              ; If not, jump back up
+0x0000428e: 0x2d000032 | [0248]                 move.v  d:REG_CWRK v:VGA_ADDR_CROW
+0x0000428f: 0x61d00000 | [0249]                 push.r  s:REG_CWRK
+0x00004290: 0x2d000000 | [0250]                 move.v  d:REG_CWRK v:#h00
+0x00004291: 0x61d00000 | [0251]                 push.r  s:REG_CWRK
+0x00004292: 0xd00ffe50 | [0252]                 call.s  a:ioc_send
+0x00004293: 0x41d00000 | [0253]                 pops.r  d:REG_CWRK
+0x00004294: 0x41d00000 | [0254]                 pops.r  d:REG_CWRK                                  ; Clear row register
+0x00004295: 0xd00fff65 | [0256] :.cexit         call.s  a:vga_sclr
+0x00004296: 0x41d00000 | [0258] :.exit          pops.r  d:REG_CWRK
+0x00004297: 0x41c00000 | [0259]                 pops.r  d:REG_HCHR
+0x00004298: 0xf0000000 | [0260]                 rtrn.s                                              ; And return
